@@ -35,9 +35,9 @@ handlers:
 root:
   # level: CRITICAL
   # level: ERROR
-  level: WARNING
+  # level: WARNING
   # level: INFO
-  # level: DEBUG
+  level: DEBUG
   handlers: [console]
 
 ####################################################################################################
@@ -45,6 +45,6 @@ root:
 loggers:
 
   KiCadRW:
-    # level: DEBUG
-    level: INFO
+    level: DEBUG
+    # level: INFO
     # level: WARNING
