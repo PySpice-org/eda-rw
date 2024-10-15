@@ -226,7 +226,7 @@ class SchemaNode(TreeMixin):
         childs = set()
         for node in self._instances:
             child_str = '/'.join([type(_).__name__ for _ in node])
-            child_str = re.sub('Node\/(Node\/)+Node', 'Node/.../Node', child_str)
+            child_str = re.sub(r'Node\/(Node\/)+Node', 'Node/.../Node', child_str)
             childs.add(child_str)
         return f'{self._name} #{number_of_instances} {childs}'
 
