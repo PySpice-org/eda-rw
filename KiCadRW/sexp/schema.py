@@ -19,7 +19,7 @@
 ####################################################################################################
 
 __all__ = [
-    "KiCadSchema",
+    'KiCadSchema',
 ]
 
 ####################################################################################################
@@ -41,13 +41,13 @@ building a graph.
 
 Notice this code implements many tricks to handle this file format:
 
-* We cannot validate the format using a kind of DTD.
-* S-expression support is quite limited in comparison to XML libraries.  The sexpdata Python module
+- We cannot validate the format using a kind of DTD.
+- S-expression support is quite limited in comparison to XML libraries.  The sexpdata Python module
   provides data at a very low level in comparison to XML and even JSON/YAML.  For example, there is
   no XPath feature, no tool to deserialise to an oriented object API, and no linter.
-* It is unclear how it would be easy to change data and rewrite a file.
-* KiCad don't store fundamental information like the netlist, thus we have to guess it using object coordinates.
-* KiCad uses localised property names, e.g. for sheet filename.  The key will be in French if you
+- It is unclear how it would be easy to change data and rewrite a file.
+- KiCad don't store fundamental information like the netlist, thus we have to guess it using object coordinates.
+- KiCad uses localised property names, e.g. for sheet filename.  The key will be in French if you
   saved the file with the UI language set to French.
 
 Why the hell, KiCad don't use an XML file format and don't store the netlist !
@@ -58,9 +58,13 @@ Why the hell, KiCad don't use an XML file format and don't store the netlist !
 
 import logging
 
+from itertools import combinations
+from typing import Any, Iterator
+
 # from pprint import pprint
 
 from ..geometry import EuclidianMatrice, Position, PositionAngle, Vector
+# Fixme: use sexpdata ???
 from .deprecated.sexpression import Sexpression, cdr, car_value
 
 ####################################################################################################
@@ -68,6 +72,13 @@ from .deprecated.sexpression import Sexpression, cdr, car_value
 _module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
+
+type FloatPair = tuple[float, float]
+
+####################################################################################################
+
+def pairwise(iterable):
+    yield from combinations(iterable, 2)
 
 def exchange_pair(_):
     return (_[1], _[0])
@@ -78,14 +89,23 @@ class NameMixin:
 
     ##############################################
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self._name = name
 
     ##############################################
 
+    def __hash__(self) -> int:
+        return hash((self.__class__.__name__, self._name))
+
+    ##############################################
+
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.__class__.__name__} {self._name}"
 
 ####################################################################################################
 
@@ -93,18 +113,18 @@ class NumberNameMixin(NameMixin):
 
     ##############################################
 
-    def __init__(self, number, name):
+    def __init__(self, number: int, name: str) -> None:
         self._number = number
         NameMixin.__init__(self, name)
 
     ##############################################
 
     @property
-    def number(self):
+    def number(self) -> int:
         return self._number
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
 ####################################################################################################
@@ -113,71 +133,99 @@ class OnWireMixin(Position):
 
     ##############################################
 
-    def __init__(self, x, y):
+    def __init__(self, x: float, y: float) -> None:
         super().__init__(x, y)
         self._wires = set()
 
     ##############################################
 
     @property
-    def wires(self):
+    def wires(self) -> Iterator['Wire']:
         return iter(self._wires)
 
     ##############################################
 
-    def connect_wire(self, wire):
+    def connect_wire(self, wire: 'Wire') -> None:
         self._wires.add(wire)
+
+    ##############################################
+
+    def match_wires(self, wires: list['Wire']) -> None:
+        for wire in wires:
+            if wire.contains(self):
+                self.connect_wire(wire)
 
 ####################################################################################################
 
 class Pin(NumberNameMixin, Position):
 
+    """Class to implement a pin of a symbol"""
+
     ##############################################
 
-    def __init__(self, number, name, x, y):
+    def __init__(self, number: int, name: str, x: float, y: float) -> None:
         Position.__init__(self, x, y)
         NumberNameMixin.__init__(self, number, name)
 
     ##############################################
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Pin f{self._number} " + super().__str__()
 
 ####################################################################################################
 
 class PinPosition(NumberNameMixin, Position):
 
+    """Class to implement a pin of a symbol instance"""
+
+    # Fixme: name ???
+
     ##############################################
 
-    def __init__(self, number, name, x, y):
+    def __init__(self, symbol: 'Symbol', number: int, name: str, x: float, y: float) -> None:
+        self._symbol = symbol
         Position.__init__(self, x, y)
         NumberNameMixin.__init__(self, number, name)
-        self.net_id = None
+        self.net = None
 
     ##############################################
 
-    def __str__(self):
-        return f"Pin Position #{self._number} net #{self.net_id} " + super().__str__()
+    def __hash__(self) -> int:
+        return hash(self.full_name)
+
+    ##############################################
+
+    @property
+    def full_name(self) -> str:
+        # {self.__class__.__name__} 
+        return f"{self._symbol.reference}/{self._number}"
+
+    ##############################################
+
+    def __str__(self) -> str:
+        return f"Pin Position #{self._number} net #{self.net} " + super().__str__()
 
 ####################################################################################################
 
 class SymbolLib(NameMixin):
 
+    """Class to implement a symbol in a library"""
+
     ##############################################
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         NameMixin.__init__(self, name)
         self._pins = []
 
     ##############################################
 
     @property
-    def pins(self):
+    def pins(self) -> Iterator[Pin]:
         return iter(self._pins)
 
     ##############################################
 
-    def add_pin(self, number, name, x, y):
+    def add_pin(self, number: int, name: str, x: float, y: float) -> None:
         pin = Pin(number, name, x, y)
         self._pins.append(pin)
 
@@ -185,18 +233,25 @@ class SymbolLib(NameMixin):
 
 class Symbol(PositionAngle):
 
+    """Class to implement a symbol instance"""
+
+    _logger = _module_logger.getChild('Symbol')
+
     ##############################################
 
-    def __init__(self, lib,
-                 x, y, angle,
-                 unit,
-                 in_bom=True,
-                 on_board=True,
-                 reference='', value='',
-                 footprint='',
-                 datasheet='',
-                 mirror=None,   # optional
-                 ):
+    def __init__(
+        self,
+        lib: SymbolLib,
+        x: float, y: float, angle: float,
+        unit,
+        in_bom: bool = True,
+        on_board: bool = True,
+        reference: str = '', value: str = '',
+        footprint: str = '',
+        datasheet: str = '',
+        mirror=None,   # optional
+    ) -> None:
+        # Fixme: uuid
         super().__init__(x, y, angle)
         self._lib = lib
         self._mirror = None
@@ -207,16 +262,16 @@ class Symbol(PositionAngle):
         self._value = value
         self._footprint = footprint
         self._datasheet = datasheet
-        self._pins = []
+        self._pins = [self._pin_position(pin) for pin in self._lib.pins]
 
     ##############################################
 
     @property
-    def lib(self):
+    def lib(self) -> SymbolLib:
         return self._lib
 
     @property
-    def lib_name(self):
+    def lib_name(self) -> str:
         return self._lib.name
 
     @property
@@ -228,36 +283,49 @@ class Symbol(PositionAngle):
         return self._unit
 
     @property
-    def in_bom(self):
+    def in_bom(self) -> bool:
         return self._in_bom
 
     @property
-    def in_board(self):
+    def in_board(self) -> bool:
         return self._in_board
 
     @property
-    def reference(self):
+    def reference(self) -> str:
         return self._reference
 
     @property
-    def value(self):
+    def value(self) -> str:
         return self._value
 
     @property
-    def footprint(self):
+    def footprint(self) -> str:
         return self._footprint
 
     @property
-    def datasheet(self):
+    def datasheet(self) -> str:
         return self._datasheet
 
     @property
-    def pins(self):
+    def pins(self) -> Iterator[PinPosition]:
         return iter(self._pins)
 
     @property
-    def first_pin(self):
+    def first_pin(self) -> PinPosition:
         return self._pins[0]
+
+    ##############################################
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.__class__.__name__} {self._reference}"
+
+    ##############################################
+
+    def _unassigned_pins(self) -> Iterator[PinPosition]:
+        for pin_position in self._pins:
+            if pin_position.net is None:
+                yield pin_position
 
     ##############################################
 
@@ -275,49 +343,71 @@ class Symbol(PositionAngle):
 
     ##############################################
 
-    def _pin_position(self, pin):
+    def _pin_position(self, pin: Pin) -> PinPosition:
         """Compute the pin position in the sheet"""
         v = Vector(pin.x, -pin.y)
-
-        angle = self._angle
+        # angle = self._angle
         matrice = EuclidianMatrice.rotation(self._angle)
         if self._mirror == 'x':
             matrice = EuclidianMatrice.x_mirror(matrice)
         elif self._mirror == 'y':
             matrice = EuclidianMatrice.y_mirror(matrice)
-
         p = v * matrice + self
-
-        return PinPosition(pin.number, pin.name, p.x, p.y)
+        return PinPosition(self, pin.number, pin.name, p.x, p.y)
 
     ##############################################
 
-    def guess_netlist(self, wires):
-        for pin in self._lib.pins:
-            pin_position = self._pin_position(pin)
+    def match_pin_with_wire(self, wires: list['Wire']) -> None:
+        for pin in self._pins:
             for wire in wires:
-                if wire.match_pin(pin_position):
-                    pin_position.net_id = wire.net_id
-            if pin_position.net_id is None:
-                self._logger.warning("Net not found")
-            self._pins.append(pin_position)
+                if wire.match_position(pin):
+                    self._logger.info(f"Pin {self._reference}/{pin.number} is on wire {wire.id}")
+                    wire.net.link(pin)
+            # if pin.net is None:
+            #     self._logger.warning(f"Net not found {self.reference} pin #{pin.number}")
+
+    ##############################################
+
+    def match_pin_with_pin(self, symbols: list['Symbol']) -> None:
+        for pin in self._unassigned_pins():
+            for symbol in symbols:
+                if symbol is self:
+                    continue
+                for pin2 in symbol.pins:
+                    if pin == pin2:
+                        self._logger.info(f"Pin {self._reference}/{pin.number} is connected to {symbol.reference}/{pin2.number}")
+                        match pin.net, pin2.net:
+                            case None, None:
+                                net = Net(item=pin)
+                                net.link(pin2)
+                            case Net(), None:
+                                pin.net.link(pin2)
+                            case None, Net():
+                                pin2.net.link(pin)
+                            case Net(), Net():
+                                pin.merge(pin2)
+            if pin.net is None:
+                self._logger.warning(f"Net not found for pin {self.reference}/{pin.number}")
+
+####################################################################################################
+
+# class WireJunction:
+#     def __init__(self, wire1: 'Wire', wire2: 'Wire') -> None:
+#         self.wire1 = wire1
+#         self.wire2 = wire2
 
 ####################################################################################################
 
 class Wire:
 
-    _logger = _module_logger.getChild("Wire")
+    _logger = _module_logger.getChild('Wire')
 
     ##############################################
 
-    def __init__(self, id, start_point, end_point):
+    def __init__(self, id: int, start_point: FloatPair, end_point: FloatPair) -> None:
         self._id = id
         self._start = Position(*start_point)
         self._end = Position(*end_point)
-        self._connections = set()
-        self._connection_types = set()
-        self._net_id = None
-
         u = self._end - self._start
         if u.is_vertical:
             self._direction = 'V'
@@ -326,19 +416,41 @@ class Wire:
         else:
             self._direction = None
 
+        self._connections = set()
+        self._connection_types = set()   # Fixme:
+        self.label = None
+        self._net = None
+
+    ##############################################
+
+    def __hash__(self) -> int:
+        return hash((self.__class__.__name__, self._id))
+
     ##############################################
 
     @property
-    def start(self):
+    def id(self) -> int:
+        return self._id
+
+    @property
+    def start(self) -> Position:
         return self._start
 
     @property
-    def end(self):
+    def end(self) -> Position:
         return self._end
 
     @property
-    def direction(self):
+    def direction(self) -> str:
         return self._direction
+
+    ##############################################
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.__class__.__name__} {self._id}"
+
+    ##############################################
 
     @property
     def connections(self):
@@ -347,42 +459,39 @@ class Wire:
     ##############################################
 
     @property
-    def net_id(self):
-        return self._net_id
+    def net(self) -> 'Net':
+        return self._net
 
-    @net_id.setter
-    def net_id(self, value):
-        if self._net_id is None:
-            self._net_id = value
+    @net.setter
+    def net(self, value: 'Net') -> None:
+        # if value is None:
+        #     raise ValueError
+        if self._net is None:
+            self._net = value
             for _ in self._connections:
-                _.net_id = value
-        elif self._net_id != value:
-            raise NameError(f"net_id overwrite to {value} was {self._net_id}")
+                # _.net = value
+                value.link(_)
+        elif self._net != value:
+            raise NameError(f"wire on net {self._net} overwritten to {value}")
 
     ##############################################
 
-    def __str__(self):
+    def __str__(self) -> str:
         direction = ''
         if self._direction == 'V':
             direction = 'vertical'
         elif self._direction == 'H':
             direction = 'horizontal'
-        return f"{self.__class__.__name__} #{self._id} from {self._start} to {self._end} {direction} net #{self.net_id}"
+        return f"{self.__class__.__name__} #{self._id} from {self._start} to {self._end} dir={direction} on net {self.net}"
 
     ##############################################
 
-    def match_pin(self, pin_position):
-        return self._start == pin_position or self._end == pin_position
+    def match_position(self, position: Position) -> bool:
+        return self._start == position or self._end == position
 
     ##############################################
 
-    def match_obj(self, obj):
-        if self.contains(obj):
-            obj.connect_wire(self)
-
-    ##############################################
-
-    def match_extremities(self, wire):
+    def match_extremities(self, wire: 'Wire') -> bool:
         connection = None
         if self._start == wire.start:
             connection = ('s', 's')
@@ -393,6 +502,7 @@ class Wire:
         elif self._end == wire.end:
             connection = ('e', 'e')
         if connection is not None:
+            self._logger.info(f"Wire {self._id} is connected to {wire.id}")
             self.add_connection(wire, connection)
             wire.add_connection(self, exchange_pair(connection))
             return True
@@ -400,12 +510,12 @@ class Wire:
 
     ##############################################
 
-    def contains(self, obj):
+    def contains(self, obj: Position) -> bool:
         return Vector.point_in_segment(self._start, self._end, obj)
 
     ##############################################
 
-    def add_connection(self, wire, type_):
+    def add_connection(self, wire: 'Wire', type_: tuple[str, str]) -> None:
         if wire is self:
             self._logger.warning("self connection")
         else:
@@ -435,10 +545,50 @@ class Bus(Wire):
 
 class Junction(OnWireMixin):
 
+    _logger = _module_logger.getChild('Junction')
+
+    ID = 0
+
     ##############################################
 
-    def __str__(self):
-        return "Junction at " + super().__str__()
+    def __init__(self, x: float, y: float) -> None:
+        super().__init__(x, y)
+        Junction.ID += 1   # Fixme: atomic
+        self._id = Junction.ID
+        self._connection_types = {}
+
+    ##############################################
+
+    @property
+    def id(self) -> int:
+        # Fixme: mixin
+        return self._id
+
+    ##############################################
+
+    def __str__(self) -> str:
+        return f"Junction {self._id} at " + super().__str__()
+
+    ##############################################
+
+    def match_wires(self, wires) -> None:
+        for wire in wires:
+            connection = None
+            if wire.start == self:
+                connection = 's'
+            elif wire.end == self:
+                connection = 'e'
+            elif wire.contains(self):
+                connection = 'j'
+            if connection is not None:
+                self.connect_wire(wire)
+                self._connection_types[wire.id] = connection
+        # connect wires
+        for wire1, wire2 in pairwise(self._wires):
+            self._logger.debug(f"Junction {self._id} on wire {wire1.id} and {wire2.id}")
+            connection = tuple([self._connection_types[_.id] for _ in (wire1, wire2)])
+            wire1.add_connection(wire2, connection)
+            wire2.add_connection(wire1, connection)
 
 ####################################################################################################
 
@@ -446,7 +596,7 @@ class NoConnect(OnWireMixin):
 
     ##############################################
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "No connect at " + super().__str__()
 
 ####################################################################################################
@@ -457,23 +607,44 @@ class BusEntry(OnWireMixin):
 
     ##############################################
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Bus entry at " + super().__str__()
 
 ####################################################################################################
 
 class Label(NameMixin, OnWireMixin):
 
+    _logger = _module_logger.getChild('Label')
+
     ##############################################
 
-    def __init__(self, name, x, y):
+    def __init__(self, name: str, x: float, y: float) -> None:
         OnWireMixin.__init__(self, x, y)
         NameMixin.__init__(self, name)
+        self.net = None
 
     ##############################################
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Label {self._name} " + super().__str__()
+
+    ##############################################
+
+    def connect_wire(self, wire: 'Wire') -> None:
+        # Fixme: GlobalLabel HierarchicalLabel
+        self._logger.info(f"Wire {wire.id} has label {self._name}")
+        super().connect_wire(wire)
+        wire.label = self
+
+    ##############################################
+
+    def make_net(self) -> 'Net':
+        self._logger.info(f"Make net {self._name}")
+        net = Net(id=self._name, item=self)
+        # self.net = net
+        for wire in self._wires:
+            # wire.net = net
+            net.link(wire)
 
 ####################################################################################################
 
@@ -481,7 +652,7 @@ class GlobalLabel(Label):
 
     ##############################################
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Global label f{self._name} " + super().__str__()
 
 ####################################################################################################
@@ -490,7 +661,7 @@ class HierarchicalLabel(Label):
 
     ##############################################
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Hierarchical label f{self._name} " + super().__str__()
 
 ####################################################################################################
@@ -500,7 +671,16 @@ class Sheet:
 
 ####################################################################################################
 
-class NetId:
+class Net:
+
+    """Class to implemenent a net in a circuit.
+
+    A net can be a set of:
+    - wires connected by extremities, junctions, or labels
+    - pin connected to a wire or another pin
+    """
+
+    _logger = _module_logger.getChild('Net')
 
     UUID = 0
     NETS = []
@@ -511,60 +691,90 @@ class NetId:
     @classmethod
     def assign_ids(cls):
         _id = 1
-        for net_id in cls.NETS:
-            if net_id._id is None:
-                net_id._id = _id
-                cls.MAP[_id] = net_id._uuid
+        for net in cls.NETS:
+            if net._id is None:
+                cls._logger.info(f"Assign {_id} to UUID={net._uuid}")
+                net._id = _id
+                cls.MAP[_id] = net
                 _id += 1
 
     ##############################################
 
-    def __init__(self):
-        NetId.UUID += 1   # Fixme: Atomic
-        self._uuid = NetId.UUID
+    def __init__(self, id: str = None, item: Any = None) -> None:
+        Net.NETS.append(self)
+        Net.UUID += 1   # Fixme: Atomic
+        self._uuid = Net.UUID
+        self._logger.info(f"New Net UUID={self._uuid} ID={id}")
         self._id = None
-        NetId.NETS.append(self)
+        if id is not None:
+            self.id = id
+        self._items = set()
+        if item is not None:
+            self.link(item)
+
+    ##############################################
+
+    def link(self, item: Any) -> None:
+        # Fixme: API ???
+        #   recursive ???
+        if item.net != self:
+            self._logger.info(f"Link net UUID={self._uuid} and item {item.full_name}")
+            item.net = self
+            self._items.add(item)
+            # print(self.uuid, [_.full_name for _ in self._items])
 
     ##############################################
 
     @property
-    def uuid(self):
+    def uuid(self) -> int:
         return self._uuid
 
     ##############################################
 
     @property
-    def id(self):
+    def id(self) -> str:
         return self._id
 
     @id.setter
-    def id(self, value):
-        if value not in NetId.MAP:
+    def id(self, value: str) -> None:
+        if value not in Net.MAP:
+            self._logger.info(f"Set ID={value} to UUID={self._uuid}")
             self._id = value
-            NetId.MAP[value] = self._uuid
+            Net.MAP[value] = self
         else:
-            raise NameError("Id is already assigned")
+            raise NameError(f"Id {value} is already assigned")
 
     ##############################################
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self._id is None:
-            return f"UUID #{self._uuid}"
+            return f"Net UUID={self._uuid}"
         else:
-            return f"#{self._id}"
+            return f"Net ID={self._id} UUID={self._uuid}"
+
+    ##############################################
+
+    def merge(self, net: 'Net') -> None:
+        self._logger.info(f"Merge net {net._uuid} to {self._uuid}")
+        for item in net._items:
+            self.link(item)
 
 ####################################################################################################
 
 class KiCadSchema(Sexpression):
 
+    """Class to read a KiCad Schema"""
+
+    _logger = _module_logger.getChild('KiCadSchema')
+
     GROUND_SYMBOLS = (
-        'spice-ngspice:0',
+        # 'spice-ngspice:0',
+        'power:GND',
     )
 
     ##############################################
 
-    def __init__(self, path):
-
+    def __init__(self, path) -> None:
         self._symbol_libs = {}
         self._wires = []
         self._buses = []
@@ -578,7 +788,7 @@ class KiCadSchema(Sexpression):
         self._sheets = []
 
         self._read(path)
-        self._guess_netlist()
+        self._make_netlist()
 
     ##############################################
 
@@ -634,8 +844,8 @@ class KiCadSchema(Sexpression):
 
     ##############################################
 
-    def _read(self, path):
-
+    def _read(self, path: str) -> None:
+        self._logger.info(f"Load KiCad schema {path}")
         s_data = self.load(path)
 
         if car_value(s_data) != 'kicad_sch':
@@ -673,7 +883,7 @@ class KiCadSchema(Sexpression):
             elif _car_value == 'no_connect':
                 # (no_connect (at 177.8 50.8) (uuid b47f754e-304e-4f98-968e-20e5e5d18e29))
                 _, d = self.to_dict(sexpr)
-                no_connection = NoConnection(*d['at'])
+                no_connection = NoConnect(*d['at'])
                 self._no_connections.append(no_connection)
 
             elif _car_value == 'bus_entry':
@@ -831,6 +1041,13 @@ class KiCadSchema(Sexpression):
         #     )
         # )
 
+        # (property "Datasheet" "https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#sec_Independent_Sources_for"
+        # (property "Description" "Voltage source, pulse"
+        # (property "Sim.Pins" "1=+ 2=-"
+        # (property "Sim.Type" "PULSE"
+        # (property "Sim.Device" "V"
+        # (property "Sim.Params" "y1=0 y2=1 td=2n tr=2n tf=2n tw=50n per=100n"
+
         _, d = self.to_dict(sexpr)
         self.fix_key_as_dict(d, 'property', 'properties')
         self.fix_key_as_dict(d, 'symbol', 'symbols')
@@ -853,7 +1070,7 @@ class KiCadSchema(Sexpression):
 
     ##############################################
 
-    def _on_symbol(self, sexpr):
+    def _on_symbol(self, sexpr) -> None:
         # 'symbol',
         #     ('lib_id', 'spice-ngspice:R'),
         #     ('at', 116.84, 78.74, 270),
@@ -894,67 +1111,75 @@ class KiCadSchema(Sexpression):
 
     ##############################################
 
-    def _guess_netlist(self):
+    def _make_netlist(self) -> None:
+        # Find the ground
+        ground = Net(0)
+        for symbol in self._symbols:
+            if symbol.lib_name in self.GROUND_SYMBOLS:
+                self._logger.info(f"Symbol {symbol.reference} is ground")
+                ground.link(symbol.first_pin)
 
-        for junction in self._junctions:
-            for wire in self._wires:
-                wire.match_obj(junction)
-        # Useless: wires are broken ???
-        # for junction in self._junctions:
-        #     Wire.connect(junction.wires)
-
-        for no_connection in self._no_connections:
-            for wire in self._wires:
-                wire.match_obj(no_connection)
-
-        for label in self._labels:
-            for wire in self._wires:
-                wire.match_obj(label)
-
-        for global_label in self._global_labels:
-            for wire in self._wires:
-                wire.match_obj(global_label)
-
-        for hierarchical_label in self._hierarchical_labels:
-            for wire in self._wires:
-                wire.match_obj(hierarchical_label)
+        # Match on wire items
+        for on_wire_items in (
+                self._no_connections,
+                self._labels,
+                self._global_labels,
+                self._hierarchical_labels,
+        ):
+            for _ in on_wire_items:
+                _.match_wires(self._wires)
 
         # Match wires
-        for wire1 in self._wires:
-            for wire2 in self._wires:
-                if wire1 is not wire2:
-                    wire1.match_extremities(wire2)
+        for wire1, wire2 in pairwise(self._wires):
+            wire1.match_extremities(wire2)
+        for junction in self._junctions:
+            junction.match_wires(self._wires)
 
-        # Assign a net to wire set
+        # Assing a net to labels and assign wires recursively
+        for label in self._labels:
+            if label.name:
+                label.make_net()
+        # and to unassigned wires
         for wire in self._wires:
-            if wire.net_id is None:
-                wire.net_id = NetId()
+            if wire.net is None:
+                wire.net = Net()
 
         # Assign a net to pins
         for symbol in self._symbols:
-            symbol.guess_netlist(self._wires)
+            symbol.match_pin_with_wire(self._wires)
+            symbol.match_pin_with_pin(self._symbols)
 
-        # Find the ground
-        for symbol in self._symbols:
-            if symbol.lib_name in self.GROUND_SYMBOLS:
-                symbol.first_pin.net_id.id = 0
-
-        # Use wire labels as ids
-        for label in self._labels:
-            if label.name and label.wires:
-                wire = next(label.wires)
-                wire.net_id.id = label.name
+        # Check all wire have a net
+        for _ in self._wires:
+            if _.net is None:
+                raise NameError(f"Wire {_.id} is unassigned")
 
         # Assign remaining ids
-        NetId.assign_ids()
+        Net.assign_ids()
+
+        # print('-'*100)
+        # print("Nets")
+        # for net in Net.NETS:
+        #     print(net)
+        #     ids = [_.id for _ in net._items if isinstance(_, Wire)]
+        #     if ids:
+        #         print(f"  wires={ids}")
+        #     ids = [_.full_name for _ in net._items if isinstance(_, PinPosition)]
+        #     if ids:
+        #         print(f"  pins={ids}")
+        # print()
+        # print("Wires")
+        # for wire in self._wires:
+        #     print(f"Wire {wire.id} {wire.net}")
+        # print('-'*100)
 
   ##############################################
 
-    def dump_netlist(self):
-        print(f"Number of nets: {NetId.UUID}")
+    def dump_netlist(self) -> None:
+        print(f"Number of nets: {Net.UUID}")
         for symbol in self._symbols:
             print(f"{symbol.reference} {symbol.value}")
             print(f"    @({symbol.x}, {symbol.y})  angle: {symbol.angle}")
             for pin in symbol.pins:
-                net_id = str(pin.net_id)
-                print(f"  p#{pin.number} {pin.name} -> {net_id: <30}   @({pin.x:.2f}, {pin.y:.2f})")
+                net = str(pin.net)
+                print(f"  p#{pin.number} {pin.name} -> {net: <30}   @({pin.x:.2f}, {pin.y:.2f})")
