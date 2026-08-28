@@ -30,42 +30,66 @@ __all__ = [
 
 ####################################################################################################
 
+import logging
 import os
+
+from typing import Callable
+
+from KiCadRW.sexp.schema import KiCadSchema, Symbol
+
+####################################################################################################
+
+_module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
 
 class CircuitMacrosDumper:
+
+    _logger = _module_logger.getChild('CircuitMacrosDumper')
 
     def generic_wrapper(element):
         def wrapper(self, symbol):
             return self.on_generic(element, symbol)
         return wrapper
 
+    # SYMBOL_MAP = {
+    #     'spice-ngspice:0': None,
+    #     'spice-ngspice:C': generic_wrapper('capacitor'),
+    #     'spice-ngspice:CHOKE': None,
+    #     'spice-ngspice:CURRENT_MEASURE': None,
+    #     'spice-ngspice:Csmall': generic_wrapper('capacitor'),
+    #     'spice-ngspice:DIODE':  generic_wrapper('diode'),
+    #     'spice-ngspice:INDUCTOR': generic_wrapper('inductor'),
+    #     'spice-ngspice:ISOURCE': None,
+    #     'spice-ngspice:ISRC_ICTL': None,
+    #     'spice-ngspice:ISRC_VCTL': None,
+    #     'spice-ngspice:NMOS': None,
+    #     'spice-ngspice:OPAMP': None,
+    #     'spice-ngspice:PMOS': None,
+    #     'spice-ngspice:QNPN': None,
+    #     'spice-ngspice:QPNP': None,
+    #     'spice-ngspice:R': generic_wrapper('resistor'),
+    #     'spice-ngspice:Rsmall': generic_wrapper('resistor'),
+    #     'spice-ngspice:SWITCH': None,
+    #     'spice-ngspice:TOGGLE': None,
+    #     'spice-ngspice:VSOURCE': generic_wrapper('source'),
+    #     'spice-ngspice:VSRC_ICTL': None,
+    #     'spice-ngspice:VSRC_VCTL': None,
+    #     'spice-ngspice:Vsrc': generic_wrapper('source'),
+    #     'spice-ngspice:ZENOR': None,
+    # }
+
+    GROUND = 0
+
     SYMBOL_MAP = {
-        'spice-ngspice:0': None,
-        'spice-ngspice:C': generic_wrapper('capacitor'),
-        'spice-ngspice:CHOKE': None,
-        'spice-ngspice:CURRENT_MEASURE': None,
-        'spice-ngspice:Csmall': generic_wrapper('capacitor'),
-        'spice-ngspice:DIODE':  generic_wrapper('diode'),
-        'spice-ngspice:INDUCTOR': generic_wrapper('inductor'),
-        'spice-ngspice:ISOURCE': None,
-        'spice-ngspice:ISRC_ICTL': None,
-        'spice-ngspice:ISRC_VCTL': None,
-        'spice-ngspice:NMOS': None,
-        'spice-ngspice:OPAMP': None,
-        'spice-ngspice:PMOS': None,
-        'spice-ngspice:QNPN': None,
-        'spice-ngspice:QPNP': None,
-        'spice-ngspice:R': generic_wrapper('resistor'),
-        'spice-ngspice:Rsmall': generic_wrapper('resistor'),
-        'spice-ngspice:SWITCH': None,
-        'spice-ngspice:TOGGLE': None,
-        'spice-ngspice:VSOURCE': generic_wrapper('source'),
-        'spice-ngspice:VSRC_ICTL': None,
-        'spice-ngspice:VSRC_VCTL': None,
-        'spice-ngspice:Vsrc': generic_wrapper('source'),
-        'spice-ngspice:ZENOR': None,
+        'R': generic_wrapper('R'),
+        'L': generic_wrapper('L'),
+        'C': generic_wrapper('C'),
+        'D': generic_wrapper('D'),
+        'GND': GROUND,
+        # 'V': source('V'),
+        # 'VDC': source('V'),
+        # 'VPULSE': source('V'),
     }
 
     HEADER = """.PS
@@ -98,13 +122,23 @@ FOO: Here
     ##############################################
 
     def __init__(self, kicad_schema):
-
         self._code = []
         for symbol in kicad_schema.symbols_by_position:
-            handler = self.SYMBOL_MAP.get(symbol.lib_name, None)
-            if handler is not None:
+            self._logger.info(f"Symbol {symbol.lib_name} {symbol.reference} {symbol.simulation_device}")
+            handler = self.find_symbol(symbol)
+            if handler is None:
+                self._logger.warning(f"any correspondance for {symbol.lib_name} {symbol.reference} {symbol.simulation_device}")
+            elif handler != self.GROUND:
                 _ = handler(self, symbol)
                 self._code.append(_)
+
+    ##############################################
+
+    def find_symbol(self, symbol: Symbol) -> Callable:
+        name = symbol.simulation_device
+        if name is None:
+            _, name = symbol.lib_name.split(':')
+        return self.SYMBOL_MAP.get(name, None)
 
     ##############################################
 
@@ -114,12 +148,11 @@ FOO: Here
     ##############################################
 
     def on_generic(self, element, symbol):
-
         reference = symbol.reference
 
         angle = symbol.angle
         direction = '_'
-        if element in ('capacitor', 'resistor', 'source'):
+        if element in ('C', 'R', 'capacitor', 'resistor', 'source'):
             if angle == 0:
                 direction = 'up_'
             elif angle == 90:
@@ -128,7 +161,7 @@ FOO: Here
                 direction = 'down_'
             elif angle == 270:
                 direction = 'left_'
-        elif element in ('diode', 'zenerdiode'):
+        elif element in ('D', 'diode', 'zenerdiode'):
             if reference.startswith('X'):
                 reference = reference[1:]
             if angle == 0:

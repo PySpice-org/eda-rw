@@ -2,16 +2,31 @@
 
 from pathlib import Path
 
-from KiCadRW.schema import KiCadSchema
 from KiCadRW.drawings.CircuitMacros import CircuitMacrosDumper
+from KiCadRW.log import setup_logging
+from KiCadRW.sexp.schema import KiCadSchema
 
 ####################################################################################################
 
-schema_path = Path(
-    'kicad-examples',
-    'capacitive-half-wave-rectification-pre-zener',
-    'capacitive-half-wave-rectification-pre-zener.kicad_sch'
-)
+logger = setup_logging()
+
+####################################################################################################
+
+# schema_path = Path(
+#     'kicad-examples',
+#     'capacitive-half-wave-rectification-pre-zener',
+#     'capacitive-half-wave-rectification-pre-zener.kicad_sch'
+# )
+
+# schema_path = Path(
+#     'kicad-examples',
+#     'single-sheet',
+#     'single.kicad_sch'
+# )
+
+schema_path = Path('/home/fabrice/__projects__/pyspice/kicad-schema/charge-pump/charge-pump.kicad_sch')
+
+####################################################################################################
 
 kicad_schema = KiCadSchema(schema_path)
 cm_code = CircuitMacrosDumper(kicad_schema)
