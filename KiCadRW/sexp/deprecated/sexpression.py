@@ -108,13 +108,16 @@ class Sexpression:
     ##############################################
 
     @classmethod
-    def sattr(cls, d):
-        return d['_'][0]
+    def sattr(cls, d: dict):
+        if d is not None:
+            return d['_'][0]
+        else:
+            return None
 
     ##############################################
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path: str):
         with open(path) as fh:
             _ = sexpdata.load(fh)
         return _

@@ -249,6 +249,10 @@ class Symbol(PositionAngle):
         reference: str = '', value: str = '',
         footprint: str = '',
         datasheet: str = '',
+        simulation_device: str = '',
+        simulation_type: str = '',
+        simulation_paramaters: str = '',
+        simulation_pins: str = '',
         mirror=None,   # optional
     ) -> None:
         # Fixme: uuid
@@ -262,6 +266,10 @@ class Symbol(PositionAngle):
         self._value = value
         self._footprint = footprint
         self._datasheet = datasheet
+        self._simulation_device = simulation_device
+        self._simulation_type = simulation_type
+        self._simulation_paramaters = simulation_paramaters
+        self._simulation_pins = simulation_pins
         self._pins = [self._pin_position(pin) for pin in self._lib.pins]
 
     ##############################################
@@ -305,6 +313,22 @@ class Symbol(PositionAngle):
     @property
     def datasheet(self) -> str:
         return self._datasheet
+
+    @property
+    def simulation_device(self) -> str:
+        return self._simulation_device
+
+    @property
+    def simulation_type(self) -> str:
+        return self._simulation_type
+
+    @property
+    def simulation_paramaters(self) -> str:
+        return self._simulation_paramaters
+
+    @property
+    def simulation_pins(self) -> str:
+        return self._simulation_pins
 
     @property
     def pins(self) -> Iterator[PinPosition]:
@@ -1041,13 +1065,6 @@ class KiCadSchema(Sexpression):
         #     )
         # )
 
-        # (property "Datasheet" "https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#sec_Independent_Sources_for"
-        # (property "Description" "Voltage source, pulse"
-        # (property "Sim.Pins" "1=+ 2=-"
-        # (property "Sim.Type" "PULSE"
-        # (property "Sim.Device" "V"
-        # (property "Sim.Params" "y1=0 y2=1 td=2n tr=2n tf=2n tw=50n per=100n"
-
         _, d = self.to_dict(sexpr)
         self.fix_key_as_dict(d, 'property', 'properties')
         self.fix_key_as_dict(d, 'symbol', 'symbols')
@@ -1087,6 +1104,13 @@ class KiCadSchema(Sexpression):
         #                          ('effects', ('font', ('size', 1.524, 1.524)))),
         #     ('pin', '1', ('uuid', '4eb52cb1-9134-412d-b80c-94785a2cfc61')),
         #     ('pin', '2', ('uuid', '15aa4aaa-9c23-451a-b015-db0e7f3f79c5'))
+        #
+        #     (property "Datasheet" "https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#sec_Independent_Sources_for"
+        #     (property "Description" "Voltage source, pulse"
+        #     (property "Sim.Pins" "1=+ 2=-"
+        #     (property "Sim.Type" "PULSE"
+        #     (property "Sim.Device" "V"
+        #     (property "Sim.Params" "y1=0 y2=1 td=2n tr=2n tf=2n tw=50n per=100n"
 
         _, d = self.to_dict(sexpr)
         self.fix_key_as_dict(d, 'property', 'properties')
@@ -1106,6 +1130,11 @@ class KiCadSchema(Sexpression):
             value=self.sattr(properties['Value']),
             footprint=self.sattr(properties['Footprint']),
             datasheet=self.sattr(properties['Datasheet']),
+            # simulation
+            simulation_device=self.sattr(properties.get('Sim.Device', None)),
+            simulation_type=self.sattr(properties.get('Sim.Type', None)),
+            simulation_paramaters=self.sattr(properties.get('Sim.Params', None)),
+            simulation_pins=self.sattr(properties.get('Sim.Pins', None)),
         )
         self._symbols.append(symbol)
 
