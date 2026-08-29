@@ -1,0 +1,108 @@
+[build-system]
+requires = ["uv_build >= 0.12.5, <0.13.0"]
+build-backend = "uv_build"
+
+[project]
+name = "KiCadRW"
+version = "0.1"
+# dynamic = ["version"]
+
+dependencies = [
+  "pyyaml>=6.0.3",
+  "sexpdata>=1.0.2",
+]
+requires-python = ">=3.15"
+
+author = {name = "Fabrice Salvaire", email="pyspice@fabrice-salvaire.fr"}
+maintainer = {name = "Fabrice Salvaire", email="pyspice@fabrice-salvaire.fr"}
+description = "Python library to read/write KiCad Sexpr file format"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE.md"]  # "gpl-3.0.md"
+keywords = ["kicad", "sexpr"]
+# cf. https://pypi.org/classifiers
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.15",
+]
+
+[project.urls]
+# cf. https://packaging.python.org/en/latest/specifications/well-known-project-urls/#well-known-labels
+Homepage = ""
+Source = "https://github.com/FabriceSalvaire/kicad-rw"
+# Download = ""
+# Changelog = ""
+# ReleaseNotes = ""
+# Documentation = ""
+# Issues = ""
+# Funding = ""
+
+
+[dependency-groups]
+dev = [
+  "invoke",
+  "rassumfrassum>=0.3.4",
+  "ruff>=0.16.5",
+  "ty>=0.0.75",
+]
+
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories
+# exclude = [...]
+
+line-length = 100
+indent-width = 4
+
+target-version = "py315"
+
+
+[tool.ruff.lint]
+preview = true
+
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+# select = ["E4", "E7", "E9", "F"]
+select = [
+# pycodestyle
+"E",
+# Pyflakes
+"F",
+# pyupgrade
+"UP",
+# flake8-bugbear
+"B",
+# flake8-simplify
+"SIM",
+# isort
+"I",
+]
+ignore = [
+"E302", # blank-lines-top-level
+"E305", # blank-lines-after-function-or-class
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+# dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+
+[tool.ruff.format]
+quote-style = "preserve"   # else single | double
+indent-style = "space"
+# skip-magic-trailing-comma = false
+# line-ending = "auto"
+
+# reStructuredText code/literal blocks and doctests are all supported.
+# This is currently disabled by default, but it is planned for this to be opt-out in the future.
+# docstring-code-format = false
+#
+# Set the line length limit used when formatting code snippets in docstrings.
+# This only has an effect when the `docstring-code-format` setting is enabled.
+# docstring-code-line-length = "dynamic"
