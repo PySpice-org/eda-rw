@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+####################################################################################################
+#
+# KiCad-RW — Python library to read/write KiCad Sexpr file format
+# Copyright (C) 2021 Fabrice SALVAIRE
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+####################################################################################################
+
 # Forked from
 #   source https://gitlab.com/kicad/libraries/kicad-library-utils/-/tree/master/symbol-generators/avr_da_db
 #   PR     https://gitlab.com/kicad/libraries/kicad-symbols/-/merge_requests/3448
