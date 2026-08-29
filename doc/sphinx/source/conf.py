@@ -40,7 +40,7 @@ except:
     logger.warning('Failed to import sphinx_rtd_theme')
     pass
 
-import KiCadRW
+import kicadrw
 
 ####################################################################################################
 

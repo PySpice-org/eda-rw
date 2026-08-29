@@ -23,7 +23,7 @@ import os
 
 from typing import Callable
 
-from KiCadRW.sexp.schema import KiCadSchema, Symbol
+from kicadrw.sexp.schema import KiCadSchema, Symbol
 
 ####################################################################################################
 

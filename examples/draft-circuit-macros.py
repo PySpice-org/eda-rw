@@ -8,9 +8,9 @@
 
 from pathlib import Path
 
-from KiCadRW.drawings.CircuitMacros import CircuitMacrosDumper
-from KiCadRW.log import setup_logging
-from KiCadRW.sexp.schema import KiCadSchema
+from kicadrw.drawings.CircuitMacros import CircuitMacrosDumper
+from kicadrw.log import setup_logging
+from kicadrw.sexp.schema import KiCadSchema
 
 ####################################################################################################
 

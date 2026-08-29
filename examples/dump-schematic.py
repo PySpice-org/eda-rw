@@ -8,8 +8,8 @@
 
 from pathlib import Path
 
-from KiCadRW.sexp.schema import KiCadSchema
-from KiCadRW.log import setup_logging
+from kicadrw.sexp.schema import KiCadSchema
+from kicadrw.log import setup_logging
 
 ####################################################################################################
 

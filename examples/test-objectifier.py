@@ -9,8 +9,8 @@
 from pathlib import Path
 from pprint import pprint
 
-from KiCadRW.sexp.objectifier import Objectifier, SchemaNode
-from KiCadRW.log import setup_logging
+from kicadrw.sexp.objectifier import Objectifier, SchemaNode
+from kicadrw.log import setup_logging
 
 ####################################################################################################
 

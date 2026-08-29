@@ -36,8 +36,8 @@ import string
 
 ####################################################################################################
 
-from KiCadRW.sexp import symbol
-from KiCadRW.sexp.symbol import SymbolLibrary, JustifyStyle, Part, ExtendedPart, Direction
+from kicadrw.sexp import symbol
+from kicadrw.sexp.symbol import SymbolLibrary, JustifyStyle, Part, ExtendedPart, Direction
 
 ####################################################################################################
 

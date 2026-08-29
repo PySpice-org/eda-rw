@@ -8,7 +8,7 @@
 
 from pathlib import Path
 
-from KiCadRW.sexp import loads, dumps
+from kicadrw.sexp import loads, dumps
 
 ####################################################################################################
 

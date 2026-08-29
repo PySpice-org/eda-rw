@@ -123,7 +123,7 @@ def update_authors(ctx):
 @task
 def publish(ctx):
     from .SECRET_CONFIG import SSH_CONFIG
-    import KiCadRW
+    import kicadrw
     release = KiCadRW.__version__
     version = '.'.join(release.split('.')[:2])
     command_template = (
