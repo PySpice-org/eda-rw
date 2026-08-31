@@ -6,11 +6,16 @@
 #
 ####################################################################################################
 
-from pathlib import Path
-
-import sys
+__all__ = [
+    'Logging',
+    'OS',
+    'Path',
+]
 
 ####################################################################################################
+
+import sys
+from pathlib import Path as plPath  # Fixme: due to Path
 
 import kicadrw.tools.path as PathTools
 
@@ -21,11 +26,12 @@ class OsFactory:
     ##############################################
 
     def __init__(self) -> None:
-        if sys.platform.startswith('linux'):
+        _ = sys.platform
+        if _.startswith('linux'):
             self._name = 'linux'
-        elif sys.platform.startswith('win'):
+        elif _.startswith('win'):
             self._name = 'windows'
-        elif sys.platform.startswith('darwin'):
+        elif _.startswith('darwin'):
             self._name = 'osx'
 
     ##############################################
@@ -50,10 +56,9 @@ OS = OsFactory()
 
 ####################################################################################################
 
-_this_file = Path(__file__).absolute()
+_this_file = plPath(__file__).absolute()
 
 class Path:
-
     kicadrw_module_directory = _this_file.parents[1]
     config_directory = _this_file.parent
 
@@ -67,5 +72,5 @@ class Logging:
     ##############################################
 
     @staticmethod
-    def find(config_file) -> Path:
+    def find(config_file: str) -> plPath:
         return PathTools.find(config_file, Logging.directories)

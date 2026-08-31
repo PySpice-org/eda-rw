@@ -6,7 +6,10 @@
 #
 ####################################################################################################
 
-"""Patch for sexpdata
+"""Patch for sexpdata for KiCAD syntax.
+
+Methods that require customizing the recursion or output string of `tosexp()` should be registered
+with `@sexpdata.tosexp.register()`. Also the default handlers can be overridden by re-registration.
 """
 
 ####################################################################################################
@@ -14,10 +17,10 @@
 import sexpdata as _sexpdata
 from sexpdata import tosexp as _tosexp
 
-# for __init__.py
-from sexpdata import loads, dumps, Symbol
-
 ####################################################################################################
+#
+# Customize float after "at"
+#
 
 _ROUND_2_SYMBOLS = ('at',)
 
@@ -29,6 +32,9 @@ def _(obj: float, **kwds: dict) -> str:
     return str(obj)
 
 ####################################################################################################
+#
+# Customize the breaking of a KiCAD sexp
+#
 
 _BREAK_OPENER_SYMBOLS = (
     'effects',
@@ -68,13 +74,13 @@ def _(self, **kwds: dict) -> str:
     car = self.I[0]
     if isinstance(car, _sexpdata.Symbol):
         str_car = str(car)
-        kwds.setdefault('car_stack', [])
-        if str_car in _BREAK_OPENER_SYMBOLS and not _dont_break(kwds['car_stack'], str_car):
+        kwds.setdefault('car_stack', [])  # ty: ignore[no-matching-overload]
+        if str_car in _BREAK_OPENER_SYMBOLS and not _dont_break(kwds['car_stack'], str_car):  # ty: ignore[invalid-argument-type]
             exprs_indent = '  '
             break_prefix_opener = '\n' + exprs_indent
         if str_car in _BREAK_CLOSER_SYMBOLS:
             break_prefix_closer = '\n' + exprs_indent
-        kwds['car_stack'].append(str_car)
+        kwds['car_stack'].append(str_car)  # ty: ignore[unresolved-attribute]
         if str_car in _BREAK_PREFIX_SYMBOLS:
             suffix_break = '\n'
 
@@ -82,8 +88,8 @@ def _(self, **kwds: dict) -> str:
     indented_exprs = '\n'.join(exprs_indent + line.rstrip() for line in exprs.splitlines(True))
     indented_exprs = indented_exprs[len(exprs_indent):]
 
-    if kwds.get('car_stack', None):
-        kwds['car_stack'].pop()
+    if kwds.get('car_stack'):
+        kwds['car_stack'].pop()  # ty: ignore[no-matching-overload]
 
     return (
         break_prefix_opener + self.__class__.opener +

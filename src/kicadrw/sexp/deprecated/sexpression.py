@@ -16,17 +16,18 @@ __all__ = [
 ####################################################################################################
 
 import sexpdata
-from sexpdata import car, cdr, Symbol
+from sexpdata import Symbol, car, cdr
 
 ####################################################################################################
 
-def get_value(_):
+def get_value(_: Symbol) -> str:
     if isinstance(_, Symbol):
         return str(_)
     else:
-        return _.value()
+        # print(f">>> {type(_)} {_}")
+        return _.value()   # Fixme: type ???
 
-def car_value(_):
+def car_value(_: tuple | list) -> str:
     return get_value(car(_))
 
 ####################################################################################################
@@ -36,12 +37,12 @@ class Sexpression:
     ##############################################
 
     @classmethod
-    def to_dict(cls, sexpr):
+    def to_dict(cls, sexpr: tuple | list) -> tuple | list:
         """Convert a S-expression to JSON"""
-        if isinstance(car(sexpr), sexpdata.Symbol):
+        if isinstance(car(sexpr), Symbol):
             d = {'_': []}
             for item in cdr(sexpr):
-                if isinstance(item, sexpdata.Symbol):
+                if isinstance(item, Symbol):
                     d['_'].append(get_value(item))
                 elif isinstance(item, list):
                     key, value = cls.to_dict(item)
@@ -66,7 +67,7 @@ class Sexpression:
     ##############################################
 
     @classmethod
-    def fix_key_as_dict(cls, adict, key, new_key):
+    def fix_key_as_dict(cls, adict: dict, key: str, new_key: str) -> None:
         """Fix key*... as a dict"""
         new_dict = {}
         while key in adict:
@@ -82,7 +83,7 @@ class Sexpression:
     ##############################################
 
     @classmethod
-    def fix_key_as_list(cls, adict, key, new_key):
+    def fix_key_as_list(cls, adict: dict, key: str, new_key: str) -> None:
         """Fix key*... as a list"""
         new_list = []
         while key in adict:
@@ -96,16 +97,17 @@ class Sexpression:
     ##############################################
 
     @classmethod
-    def sattr(cls, d: dict):
+    def sattr(cls, d: dict | None) -> str:
         if d is not None:
             return d['_'][0]
         else:
-            return None
+            # Fixme: schema expects a str
+            return None  # ty: ignore[invalid-return-type]
 
     ##############################################
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str) -> list:
         with open(path) as fh:
             _ = sexpdata.load(fh)
         return _

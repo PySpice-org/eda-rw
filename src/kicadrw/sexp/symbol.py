@@ -6,18 +6,41 @@
 #
 ####################################################################################################
 
+# ty: ignore[unresolved-import]
+
+# Used in examples/avr_da_db/rework-library-module.py
+# Fixme: use tuple or list
+
+####################################################################################################
+
+"""
+
+Classes can be supported by `tosexp()` by adding a `__to_lisp_as__` method that returns a
+restructuring of an instance.
+
+"""
+
+####################################################################################################
+
 __all__ = [
+    'Direction',
+    'ExtendedPart',
+    'JustifyStyle',
+    'Part',
+    'Pin',
+    'Property',
+    'RectangularShape',
     'SymbolLibrary',
 ]
 
 ####################################################################################################
 
-from enum import Enum, IntEnum, auto
+from enum import IntEnum
 from typing import Any
 
 from . import Symbol, dumps
+
 # from . import SexpSymbols as Sym
-# pylint: disable=no-name-in-module
 from .SexpSymbols import (
     AT,
     BACKGROUND,
@@ -53,26 +76,27 @@ from .SexpSymbols import (
     WIDTH,
     YES,
 )
-# pylint: enable=no-name-in-module
 
 ####################################################################################################
 
-def ensure_int_float(_: Any) -> float:
+type IntFloat = int | float
+
+def ensure_int_float(_: Any) -> IntFloat:
     if isinstance(_, (int, float)):
         return _
     return float(_)
 
-def ensure_int_float_x(_: Any, n: int) -> list[float]:
+def ensure_int_float_x(_: Any, n: int) -> list[IntFloat]:
     return [ensure_int_float(_) for _ in _[:n]]
 
-def ensure_int_float_2(_: Any) -> list[float, float]:
-    return ensure_int_float_x(_, 2)
+def ensure_int_float_2(_: Any) -> tuple[IntFloat, IntFloat]:
+    return tuple(ensure_int_float_x(_, 2))  # ty: ignore[invalid-return-type]
 
-def ensure_int_float_3(_: Any) -> list[float, float]:
-    return ensure_int_float_x(_, 3)
+def ensure_int_float_3(_: Any) -> tuple[IntFloat, IntFloat, IntFloat]:
+    return tuple(ensure_int_float_x(_, 3))  # ty: ignore[invalid-return-type]
 
-def ensure_int_float_4(_: Any) -> list[float, float]:
-    return ensure_int_float_x(_, 4)
+def ensure_int_float_4(_: Any) -> tuple[IntFloat, IntFloat, IntFloat, IntFloat]:
+    return tuple(ensure_int_float_x(_, 4))  # ty: ignore[invalid-return-type]
 
 ####################################################################################################
 
@@ -106,7 +130,7 @@ class FontMixin:
 
     ##############################################
 
-    def __to_lisp_as__(self) -> list:
+    def __to_lisp_as__(self) -> tuple:
         font = [FONT, (SIZE, *self._font_size)]
         if self._italic:
             font.append(ITALIC)
@@ -150,17 +174,16 @@ class Property(FontMixin):
 
     ##############################################
 
-    def __to_lisp_as__(self) -> list:
+    def __to_lisp_as__(self) -> tuple:
         effects = list(FontMixin.__to_lisp_as__(self))
         if self._hide:
             effects.append(HIDE)
-        sexp = [
+        return (
             PROPERTY, self._name, self._value,
             (ID, self._id),
             (AT, *self._at, 0),
             effects,
-        ]
-        return sexp
+        )
 
 ####################################################################################################
 
@@ -173,7 +196,7 @@ class RectangularShape:
                  start: tuple[float, float],
                  end: tuple[float, float],
                  stroke_width: float = 0.254,
-                 color: list[float, float, float, float] = (0, 0, 0, 0),
+                 color: tuple[float, float, float, float] = (0, 0, 0, 0),
                  ) -> None:
         self._name = str(name)
         self._stroke_width = float(stroke_width)
@@ -183,7 +206,7 @@ class RectangularShape:
 
     ##############################################
 
-    def __to_lisp_as__(self) -> list:
+    def __to_lisp_as__(self) -> tuple:
         return (
             SYMBOL, self._name,
             (RECTANGLE, (START, *self._start), (END, *self._end),
@@ -206,7 +229,7 @@ class Pin(FontMixin):
                  angle: int,
                  length: float,
                  font_size: tuple[float, float],
-                 hide: False,
+                 hide: bool = False,
                  ) -> None:
         FontMixin.__init__(
             self,
@@ -224,7 +247,7 @@ class Pin(FontMixin):
 
     ##############################################
 
-    def __to_lisp_as__(self) -> list:
+    def __to_lisp_as__(self) -> tuple:
         sexp = [
             PIN,
             Symbol(self._type),
@@ -238,7 +261,7 @@ class Pin(FontMixin):
             (NAME, self._name, FontMixin.__to_lisp_as__(self)),
             (NUMBER, str(self._number), FontMixin.__to_lisp_as__(self)),
         ]
-        return sexp
+        return tuple(sexp)
 
 ####################################################################################################
 
@@ -251,8 +274,8 @@ class PropertyMixin:
 
     ##############################################
 
-    def add_property(self, *args: list, **kwargs: dict) -> Property:
-        _ = Property(*args, **kwargs, id_=len(self._properties))
+    def add_property(self, *args: tuple, **kwargs: dict) -> Property:
+        _ = Property(*args, **kwargs, id_=len(self._properties))  # ty: ignore[invalid-argument-type]
         self._properties.append(_)
         return _
 
@@ -276,31 +299,31 @@ class Part(PropertyMixin):
 
     ##############################################
 
-    def add_rectangle(self, *args: list, **kwargs: dict) -> RectangularShape:
-        name = f'{self._name}_0_{len(self._shapes) +1}'
-        _ = RectangularShape(*args, **kwargs, name=name)
+    def add_rectangle(self, *args: tuple, **kwargs: dict) -> RectangularShape:
+        name = f'{self._name}_0_{len(self._shapes) + 1}'
+        _ = RectangularShape(*args, **kwargs, name=name)  # ty: ignore[invalid-argument-type]
         self._shapes.append(_)
         return _
 
     ##############################################
 
-    def add_pin(self, *args: list, **kwargs: dict) -> Pin:
-        _ = Pin(*args, **kwargs)
+    def add_pin(self, *args: tuple, **kwargs: dict) -> Pin:
+        _ = Pin(*args, **kwargs)  # ty: ignore[invalid-argument-type]
         self._pins.append(_)
         return _
 
     ##############################################
 
-    def __to_lisp_as__(self) -> list:
-        return [
+    def __to_lisp_as__(self) -> tuple:
+        return (
             SYMBOL,
             self._name,
             (IN_BOM, YES if self._in_bom else NO),
             (ON_BOARD, YES if self._in_board else NO),
             *self._properties,
             *self._shapes,
-            [SYMBOL, f'{self._name}_1_1', *self._pins]
-        ]
+            (SYMBOL, f'{self._name}_1_1', *self._pins),
+        )
 
 ####################################################################################################
 
@@ -318,8 +341,8 @@ class ExtendedPart(PropertyMixin):
 
     ##############################################
 
-    def __to_lisp_as__(self) -> list:
-        return [SYMBOL, self._name, (EXTENDS, self._base_name), *self._properties]
+    def __to_lisp_as__(self) -> tuple:
+        return (SYMBOL, self._name, (EXTENDS, self._base_name), *self._properties)
 
 ####################################################################################################
 
@@ -337,25 +360,25 @@ class SymbolLibrary:
 
     ##############################################
 
-    def add_part(self, *args: list, **kwargs: dict) -> Part:
-        _ = Part(*args, **kwargs)
+    def add_part(self, *args: tuple, **kwargs: dict) -> Part:
+        _ = Part(*args, **kwargs)  # ty: ignore[invalid-argument-type]
         self._parts.append(_)
         return _
 
-    def add_extended_part(self, *args: list, **kwargs: dict) -> ExtendedPart:
-        _ = ExtendedPart(*args, **kwargs)
+    def add_extended_part(self, *args: tuple, **kwargs: dict) -> ExtendedPart:
+        _ = ExtendedPart(*args, **kwargs)  # ty: ignore[invalid-argument-type]
         self._parts.append(_)
         return _
 
     ##############################################
 
-    def __to_lisp_as__(self) -> list:
-        return [
+    def __to_lisp_as__(self) -> tuple:
+        return (
             KICAD_SYMBOL_LIB,
             (VERSION, Symbol(self._version)),
             (GENERATOR, Symbol(self._generator)),
             *self._parts,
-        ]
+        )
 
     ##############################################
 

@@ -6,5 +6,6 @@
 #
 ####################################################################################################
 
-from .patch import *
-from .SexpSymbols import *
+# Patch sexpdata
+from . import patch as _patch  # ruff: ignore[unused-import]
+from .SexpSymbols import *  # ruff: ignore[undefined-local-with-import-star]

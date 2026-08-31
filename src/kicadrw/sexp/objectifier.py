@@ -6,6 +6,10 @@
 #
 ####################################################################################################
 
+# see examples/avr_da_db/rework-library-module.py
+
+####################################################################################################
+
 __all__ = [
     'Objectifier',
 ]
@@ -14,10 +18,11 @@ __all__ = [
 
 import logging
 import re
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import sexpdata
-from sexpdata import car, cdr, Symbol
+from sexpdata import Symbol, car, cdr
 
 ####################################################################################################
 
@@ -180,7 +185,7 @@ class SchemaNode(TreeMixin):
     ##############################################
 
     @classmethod
-    def get_node(cls, node: None) -> 'SchemaNode':
+    def get_node(cls, node: None) -> SchemaNode:
         if not cls.NODES:
             # add root
             cls.NODES['/'] = SchemaNode('/')

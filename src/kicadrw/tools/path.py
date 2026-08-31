@@ -10,14 +10,14 @@ __all__ = ['find']
 
 ####################################################################################################
 
+from collections.abc import Iterable
 from pathlib import Path
-import os
 
 ####################################################################################################
 
-def find(file_name: str, directories: list[str]) -> Path:
+def find(file_name: str, directories: Iterable[str | Path]) -> Path:
     for directory in directories:
-        for directory_path, sub_directories, file_names in os.walk(directory):
+        for directory_path, _, file_names in Path(directory).walk():
             if file_name in file_names:
-                return Path(directory_path, file_name)
+                return directory_path.joinpath(file_name)
     raise NameError(f"File {file_name} not found in directories {directories}")

@@ -6,13 +6,58 @@
 #
 ####################################################################################################
 
+# ruff: ignore[undefined-export]
+
+__all__ = [
+    'AT',
+    'BACKGROUND',
+    'BOTTOM',
+    'COLOR',
+    'DEFAULT',
+    'EFFECTS',
+    'END',
+    'EXTENDS',
+    'FILL',
+    'FONT',
+    'GENERATOR',
+    'HIDE',
+    'ID',
+    'IN_BOM',
+    'ITALIC',
+    'JUSTIFY',
+    'KICAD_SYMBOL_LIB',
+    'LEFT',
+    'LENGTH',
+    'LINE',
+    'NAME',
+    'NO',
+    'NUMBER',
+    'ON_BOARD',
+    'PIN',
+    'PROPERTY',
+    'RECTANGLE',
+    'SIZE',
+    'START',
+    'STROKE',
+    'SYMBOL',
+    'TOP',
+    'TYPE',
+    'VERSION',
+    'WIDTH',
+    'YES',
+]
+
+####################################################################################################
+
 import sys as _sys
+
 from sexpdata import Symbol as _Symbol
 
 ####################################################################################################
 
 _module = _sys.modules[__name__]
 
+# Define these symbols in the current module
 for _name in (
     'at',
 
