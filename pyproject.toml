@@ -54,7 +54,7 @@ dev = [
 # Exclude a variety of commonly ignored directories
 # exclude = [...]
 
-line-length = 100
+line-length = 120
 indent-width = 4
 
 target-version = "py315"
