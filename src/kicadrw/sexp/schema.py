@@ -265,10 +265,10 @@ class Symbol(PositionAngle):
         reference: str = '', value: str = '',
         footprint: str = '',
         datasheet: str = '',
-        simulation_device: str | None = None,
-        simulation_type: str | None = None,
-        simulation_paramaters: str | None = None,
-        simulation_pins: str | None = None,
+        simulation_device: str = '',
+        simulation_type: str = '',
+        simulation_paramaters: str = '',
+        simulation_pins: str = '',
         mirror: str | None = None,  # optional
     ) -> None:
         # Fixme: uuid
@@ -331,19 +331,19 @@ class Symbol(PositionAngle):
         return self._datasheet
 
     @property
-    def simulation_device(self) -> str | None:
+    def simulation_device(self) -> str:
         return self._simulation_device
 
     @property
-    def simulation_type(self) -> str | None:
+    def simulation_type(self) -> str:
         return self._simulation_type
 
     @property
-    def simulation_paramaters(self) -> str | None:
+    def simulation_paramaters(self) -> str:
         return self._simulation_paramaters
 
     @property
-    def simulation_pins(self) -> str | None:
+    def simulation_pins(self) -> str:
         return self._simulation_pins
 
     @property
@@ -1152,10 +1152,10 @@ class KiCadSchema(Sexpression):
             footprint=self.sattr(properties['Footprint']),
             datasheet=self.sattr(properties['Datasheet']),
             # simulation
-            simulation_device=self.sattr(properties.get('Sim.Device', None)),
-            simulation_type=self.sattr(properties.get('Sim.Type', None)),
-            simulation_paramaters=self.sattr(properties.get('Sim.Params', None)),
-            simulation_pins=self.sattr(properties.get('Sim.Pins', None)),
+            simulation_device=self.sattr(properties.get('Sim.Device', '')),
+            simulation_type=self.sattr(properties.get('Sim.Type', '')),
+            simulation_paramaters=self.sattr(properties.get('Sim.Params', '')),
+            simulation_pins=self.sattr(properties.get('Sim.Pins', '')),
         )
         self._symbols.append(symbol)
 
