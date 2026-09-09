@@ -8,16 +8,44 @@
 
 from pathlib import Path
 
-from edarw.eda.librepcb.circuit import Circuit
+from rich import print
+from rich.console import Console
+
+from edarw.eda.librepcb import Project
 from edarw.log import setup_logging
 
 ####################################################################################################
 
 logger = setup_logging()
 
+console = Console()
+
 ####################################################################################################
 
-circuit_path = Path('../../librepcb-examples/calidou/circuit/circuit.lp')
+path = Path('../../librepcb-examples/calidou')
+project = Project.load(path)
+circuit = project.circuit
 
-circuit = Circuit.load(circuit_path)
+indent = ' '*4
 
+print()
+console.rule()
+for component in project.components:
+    print(component)
+    for signal in component.signal:
+        print(indent, signal)
+
+print()
+console.rule()
+for net in circuit.net:
+    print(net)
+    for signal in net.signals:
+        print(indent, f"{signal.component.name}.{signal.signal_def.name}")
+print()
+for component in circuit.component:
+    print(component)
+    for attribute in component.attribute:
+        print(indent, attribute)
+    for signal in component.signal:
+        print(indent, signal)
+        print(indent * 2, signal.signal_def)

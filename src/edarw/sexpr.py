@@ -16,6 +16,7 @@ __all__ = [
 
 import annotationlib
 import builtins
+import datetime
 import logging
 from pathlib import Path
 from typing import _SpecialForm, Self
@@ -29,6 +30,15 @@ from sexpdata import Symbol
 _module_logger = logging.getLogger(__name__)
 
 type UUID = str
+
+####################################################################################################
+
+DEBUG = False
+# DEBUG = True
+
+def debug_print(*args) -> None:
+    if DEBUG:
+        print(*args)
 
 ####################################################################################################
 
@@ -67,11 +77,11 @@ class SexprWrapper:
     ##############################################
 
     @classmethod
-    def load(cls, path: Path | str) -> Self:
-        print(f"Load {path}")
+    def load(cls, path: Path | str, **kwargs) -> Self:
+        cls._logger.info(f"Load {path}")
         with Path(path).open() as fh:
             sepr = S.load(fh)
-        return cls(sepr)
+        return cls(sepr, **kwargs)
 
     ##############################################
 
@@ -88,7 +98,7 @@ class SexprWrapper:
 
     @classmethod
     def _to_python(cls, type_, value):
-        # print(f"  to Python '{value}' <{type(value)}> -> <{type_}>")
+        # debug_print(f"  to Python '{value}' <{type(value)}> -> <{type_}>")
         match value:
             case list():
                 if len(value) == 1:
@@ -103,55 +113,67 @@ class SexprWrapper:
         match type_:
             case builtins.bool:
                 return cls._to_bool(value)
+            case datetime.datetime:  # datetime. is required by Python...
+                return datetime.datetime.fromisoformat(value)
             case _:
                 return value
 
     ##############################################
 
-    def __init__(self, sexpr, indent_level: int = 0) -> None:
+    def __init__(self, sexpr: list, indent_level: int = 0, parent: object | None = None) -> None:
+        # Fixme: attribute are not getter !
+        self._parent = parent
         indent = ' ' * 8 * indent_level
         cls = self.__class__
         annotations = annotationlib.get_annotations(cls)
-        print(f"{indent}CAR = {self.CAR} {annotations}")
+        debug_print(f"{indent}CAR = {self.CAR} {annotations}")
         if not indent_level:
-            print(sexpr)
+            debug_print(sexpr)
         if car_value(sexpr) != self.CAR:
             raise ValueError(f"CAR is {car_value} instead of {self.CAR}")
         cdr = S.cdr(sexpr)
 
         def _setattr(field, value):
-            print(f"{indent}  .{field} = {value} <{type(value)}>")
+            debug_print(f"{indent}  .{field} = {value} <{type(value)}>")
             setattr(self, field, value)
 
         def _append(field, obj_type, sexpr):
-            value = obj_type(sexpr, indent_level + 1)
-            print(f"{indent}  .{field} += {value} <{type(value)}>")
+            match obj_type:
+                case builtins.str:
+                    value = sexpr
+                case _:
+                    value = obj_type(sexpr, indent_level=indent_level + 1, parent=self)
+            debug_print(f"{indent}  .{field} += {value} <{type(value)}>")
             getattr(self, field).append(value)
 
+        do_pop = True
         for field, type_ in annotations.items():
-            field_sexpr = cdr.pop(0) if cdr else None
+            if do_pop:
+                # get cdr head
+                field_sexpr = cdr.pop(0) if cdr else None
+            # lookup if the field has a default
             try:
                 default_value = getattr(cls, field)
                 has_default = True
-                print(f"{field}<{type_}> = {field_sexpr} = '{default_value}'")
+                debug_print(f"{field}<{type_}> = {field_sexpr} = '{default_value}'")
             except AttributeError:
                 has_default = False
-                print(f"{field}<{type_}> = {field_sexpr}")
+                debug_print(f"{field}<{type_}> = {field_sexpr}")
             if isinstance(type_, PositionalField):
                 value = self._to_python(type_.type, field_sexpr)
                 _setattr(field, value)
             else:
                 is_list = hasattr(type_, '__origin__') and type_.__origin__ == builtins.list
                 # if is_list:
-                #     print('  is list')
-                if field_sexpr is None:
+                #     debug_print('  is list')
+                if field_sexpr is None:  # cdr was poped
                     car = None
                     field_cdr = None
                 else:
                     car = car_value(field_sexpr)
                     field_cdr = S.cdr(field_sexpr)
-                if car == field:
-                    # print('  field match')
+                if car == field:  # car match field
+                    # debug_print('  field match')
                     if is_list:
                         if not hasattr(self, field) or getattr(self, field) is None:
                             setattr(self, field, [])
@@ -163,9 +185,19 @@ class SexprWrapper:
                     else:
                         value = self._to_python(type_, field_cdr)
                         _setattr(field, value)
-                else:
+                else:  # field is not specified
                     if has_default:
-                        # print('  set default value')
-                        _setattr(field, default_value)
+                        # debug_print('  set default value')
+                        if is_list:
+                            _setattr(field, [])
+                        else:
+                            _setattr(field, default_value)
+                        do_pop = False  # already done
                     else:
                         raise NameError(f"field {field} is missing")
+
+    ##############################################
+
+    @property
+    def parent(self) -> object | None:
+        return self._parent

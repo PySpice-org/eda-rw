@@ -1,23 +1,26 @@
 ####################################################################################################
 #
 # EDA-RW — Python library to read/write EDA Sexpr file format
-# Copyright (C) 2021 Fabrice SALVAIRE
+# Copyright (C) 2026 Fabrice SALVAIRE
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 ####################################################################################################
 
-####################################################################################################
-
-__all__ = []
+__all__ = ['Circuit']
 
 ####################################################################################################
 
 import logging
-
-import sexpdata as S
-from rich import print
+from pathlib import Path
+from typing import TYPE_CHECKING, Self, cast
 
 from edarw.sexpr import UUID, Positional, SexprWrapper
+
+# from rich import print
+
+if TYPE_CHECKING:
+    from . import component
+    from .project import Project
 
 ####################################################################################################
 
@@ -57,8 +60,21 @@ class Net(SexprWrapper):
 
     ##############################################
 
+    def __init__(self, sexpr: list, indent_level: int, parent: Circuit) -> None:
+        super().__init__(sexpr, indent_level, parent)
+        self._signals: list[Signal] = []
+
+    ##############################################
+
     def __repr__(self) -> str:
-        return f"Net {self.uuid} / {self.name}"
+        return f"Net uuid={self.uuid} name='{self.name}' netclass={self.netclass}"
+
+    ##############################################
+
+    @property
+    def signals(self) -> list[Signal]:
+        # Fixme: immutable
+        return self._signals
 
 ####################################################################################################
 
@@ -68,6 +84,11 @@ class Attribute(SexprWrapper):
     type: str
     unit: str
     value: str
+
+    ##############################################
+
+    def __repr__(self) -> str:
+        return f"Attribute name='{self.name}' type='{self.type}' value='{self.value}'  unit='{self.unit}'"
 
 ####################################################################################################
 
@@ -80,6 +101,23 @@ class Signal(SexprWrapper):
 
     def __repr__(self) -> str:
         return f"Signal {self.uuid} on net {self.net}"
+
+    ##############################################
+
+    # @property
+    # def parent(self) -> Component:
+    #     return cast(Component, self._parent)
+
+    @property
+    def component(self) -> Component:
+        return cast(Component, self._parent)
+
+    ##############################################
+
+    @property
+    def signal_def(self) -> component.Signal:
+        component = self.component.component_def
+        return component.get_signal(self.uuid)
 
 ####################################################################################################
 
@@ -99,14 +137,30 @@ class Component(SexprWrapper):
 
     ##############################################
 
+    # @property
+    # def parent(self) -> Circuit:
+    #     return cast(Circuit, self._parent)
+
+    @property
+    def circuit(self) -> Circuit:
+        return cast(Circuit, self._parent)
+
+    ##############################################
+
     def __repr__(self) -> str:
-        return f"Component {self.uuid} / {self.name}"
+        return f"Component uuid={self.uuid} name='{self.name}' value='{self.value}'"
+
+    ##############################################
+
+    @property
+    def component_def(self) -> component.Component:
+        return self.circuit.project.component(self.lib_component)
 
 ####################################################################################################
 
 class Circuit(SexprWrapper):
 
-    """Class to read a KiCad Schema"""
+    """Class to read a LibrePCB Circuit"""
 
     CAR = 'librepcb_circuit'
     variant: Variant
@@ -115,3 +169,32 @@ class Circuit(SexprWrapper):
     component: list[Component]
 
     _logger = _module_logger.getChild('Circuit')
+
+    ##############################################
+
+    @classmethod
+    def load(self, path: Path | str, project: Project) -> Self:  # ty: ignore[invalid-method-override]
+        return super().load(path, project=project)
+
+    ##############################################
+
+    def __init__(self, sexpr: list, project: Project) -> None:
+        super().__init__(sexpr)
+        self._project = project
+        self._net_map = {_.uuid: _ for _ in self.net}
+        for component in self.component:
+            for signal in component.signal:
+                if signal.net != 'none':
+                    net = self.get_net(signal.net)
+                    net._signals.append(signal)
+
+    ##############################################
+
+    def get_net(self, uuid: UUID) -> Net:
+        return self._net_map[uuid]
+
+    ##############################################
+
+    @property
+    def project(self) -> Project:
+        return self._project
