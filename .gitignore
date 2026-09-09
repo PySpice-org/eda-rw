@@ -7,6 +7,7 @@
 */tex/auto
 *~
 __pycache__
+.pycache/
 du.log
 parser.out
 parsetab.py
@@ -14,6 +15,8 @@ parsetab.py
 *-backups/
 
 __TRASH__/
+
+review.json
 
 ####################################################################################################
 #
@@ -96,3 +99,25 @@ out
 
 examples/avr_da_db/MCU_Microchip_AVR_Dx.kicad_sym-rewrite
 
+# !!!
+
+.python-version
+__TODO-2026__.md
+doc/notes/idea.md
+doc/notes/kicad-ecosystem.md
+doc/notes/kicad-tools.md
+doc/notes/pcb-notes.md
+examples/kicad/avr_da_db/MCU_Microchip_AVR_Dx.kicad_sym-rewrite
+examples/kicad/kicad-examples
+grille.md
+kicad-examples/symbols/sym-lib-table
+kicad-examples/symbols/symbols.kicad_pcb
+kicad-examples/symbols/symbols.kicad_prl
+kicad-examples/symbols/symbols.kicad_pro
+kicad-examples/symbols/symbols.kicad_sch
+kicad-examples/symbols/ublox-annna-b112/
+kicad-examples/symbols/ul/
+librepcb-examples/
+run-diff.sh
+src/edarw/eda/kicad/README.md
+uv.lock
