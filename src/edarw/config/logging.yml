@@ -44,7 +44,7 @@ root:
 
 loggers:
 
-  KiCadRW:
+  edarw:
     level: DEBUG
     # level: INFO
     # level: WARNING

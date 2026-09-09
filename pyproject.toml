@@ -3,19 +3,20 @@ requires = ["uv_build >= 0.12.5, <0.13.0"]
 build-backend = "uv_build"
 
 [project]
-name = "KiCadRW"
+name = "edarw"
 version = "0.1"
 # dynamic = ["version"]
 
 dependencies = [
   "pyyaml>=6.0.3",
   "sexpdata>=1.0.2",
+  "ty==0.0.77",
 ]
 requires-python = ">=3.15"
 
 author = {name = "Fabrice Salvaire", email="pyspice@fabrice-salvaire.fr"}
 maintainer = {name = "Fabrice Salvaire", email="pyspice@fabrice-salvaire.fr"}
-description = "Python library to read/write KiCad Sexpr file format"
+description = "Python library to read/write EDA Sexpr file format"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE.md"]  # "gpl-3.0.md"
@@ -45,6 +46,7 @@ Source = "https://github.com/FabriceSalvaire/kicad-rw"
 dev = [
   "invoke",
   "rassumfrassum>=0.3.4",
+  "rich>=15.0.0",
   "ruff>=0.16.5",
   "ty>=0.0.75",
 ]

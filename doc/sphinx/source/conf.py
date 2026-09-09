@@ -2,14 +2,14 @@
 
 ####################################################################################################
 #
-# KiCadRW - Python library to read/write KiCad Sexpr file format
+# EDA-RW - Python library to read/write EDA Sexpr file format
 # Copyright (C) 2017 Salvaire Fabrice
 #
 ####################################################################################################
 
 ####################################################################################################
 #
-# KiCadRW documentation build configuration file, created by
+# EDA-RW documentation build configuration file, created by
 # sphinx-quickstart on Fri Apr  8 16:54:03 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -40,7 +40,7 @@ except:
     logger.warning('Failed to import sphinx_rtd_theme')
     pass
 
-import kicadrw
+import edarw
 
 ####################################################################################################
 
@@ -49,12 +49,12 @@ import kicadrw
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 # for directory in ,:
 
-kicad-rw_path = pathlib.Path(__file__).parents[3]
-sys.path.insert(0, str(kicad-rw_path))
+edarw_path = pathlib.Path(__file__).parents[3]
+sys.path.insert(0, str(edarw_path))
 
 ####################################################################################################
 
-exec(compile(open(kicad-rw_path.joinpath('setup_data.py')).read(), 'setup_data.py', 'exec'))
+exec(compile(open(edarw_path.joinpath('setup_data.py')).read(), 'setup_data.py', 'exec'))
 
 ####################################################################################################
 #
@@ -91,7 +91,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'KiCadRW'
+project = 'EDA-RW'
 copyright = '{0.year}, Fabrice Salvaire'.format(datetime.now())
 
 # The version info for the project you're documenting, acts as replacement for
@@ -99,7 +99,7 @@ copyright = '{0.year}, Fabrice Salvaire'.format(datetime.now())
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = KiCadRW.__version__
+release = edarw.__version__
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
 
@@ -160,9 +160,7 @@ autodoc_default_flags = [
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#html_theme = 'KiCadRW'
-html_theme = 'KiCadRWRtd'
-# html_theme = 'sphinx_rtd_theme'
+# html_theme = ''
 
 # on_rtd is whether we are on readthedocs.org
 ## on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -244,7 +242,7 @@ html_static_path = ['_static']
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'KiCadRW'
+htmlhelp_basename = 'EDA-RW'
 
 ####################################################################################################
 #
@@ -262,7 +260,7 @@ latex_font_size = '10pt'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'KiCadRW.tex', 'KiCadRW Documentation', 'Fabrice Salvaire', 'manual'),
+  ('index', 'edarw.tex', 'EDA-RW Documentation', 'Fabrice Salvaire', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -296,7 +294,7 @@ latex_logo = None
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'KiCadRW', 'KiCadRW Documentation', ['Fabrice Salvaire'], 1)
+    ('index', 'edarw', 'EDA-RW Documentation', ['Fabrice Salvaire'], 1)
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.

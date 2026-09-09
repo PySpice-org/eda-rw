@@ -66,7 +66,7 @@
 .. |Tikz| replace:: Tikz
 
 =================================================================
- KiCad-RW : Python library to read/write KiCad Sexpr file format 
+ EDA-RW : Python library to read/write EDA Sexpr file format 
 =================================================================
 
 |Pypi License|
@@ -99,7 +99,7 @@ What is KiCaD-RW ?
 
 **keywords:** kicad, 6, sexpr, python, schema
 
-**KiCad-RW** is a Python module to read the KiCad version 6 schema file format (`.kicad_sch` file
+**EDA-RW** is a Python module to read the KiCad version 6 schema file format (`.kicad_sch` file
 extension) and to compute the netlist which is not actually stored by KiCad.  This module is
 standalone and independent of the KiCad Python API, thus it don't require KiCad to work.
 
@@ -113,7 +113,7 @@ standalone and independent of the KiCad Python API, thus it don't require KiCad 
   a tool for drawing electric high quality circuits, see `CircuitMacrosDumper`
 * etc.
 
-**KiCad-RW** uses the Python library `sexpdata <https://github.com/jd-boyd/sexpdata>`_ to parse the file.
+**EDA-RW** uses the Python library `sexpdata <https://github.com/jd-boyd/sexpdata>`_ to parse the file.
 
 **How to go further:**
 

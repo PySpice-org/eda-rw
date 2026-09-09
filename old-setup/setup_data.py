@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# KiCadRW - Python library to read/write KiCad Sexpr file format
+# EDA-RW - Python library to read/write EDA Sexpr file format
 # Copyright (C) 2017 Fabrice Salvaire
 #
 # This program is free software: you can redistribute it and/or modify

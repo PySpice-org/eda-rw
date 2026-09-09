@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# KiCad-RW — Python library to read/write KiCad Sexpr file format
+# EDA-RW — Python library to read/write EDA Sexpr file format
 # Copyright (C) 2021 Fabrice SALVAIRE
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -23,7 +23,7 @@ import os
 
 from typing import Callable
 
-from kicadrw.sexp.schema import KiCadSchema, Symbol
+from edarw.sexp.schema import KiCadSchema, Symbol
 
 ####################################################################################################
 

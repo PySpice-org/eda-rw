@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# KiCad-RW — Python library to read/write KiCad Sexpr file format
+# EDA-RW — Python library to read/write EDA Sexpr file format
 # Copyright (C) 2021 Fabrice SALVAIRE
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -17,7 +17,7 @@ __all__ = [
 import sys
 from pathlib import Path as plPath  # Fixme: due to Path
 
-import kicadrw.tools.path as PathTools
+import edarw.tools.path as PathTools
 
 ####################################################################################################
 
@@ -59,7 +59,7 @@ OS = OsFactory()
 _this_file = plPath(__file__).absolute()
 
 class Path:
-    kicadrw_module_directory = _this_file.parents[1]
+    edarw_module_directory = _this_file.parents[1]
     config_directory = _this_file.parent
 
 ####################################################################################################
