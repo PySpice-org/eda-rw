@@ -17,7 +17,7 @@ logger = setup_logging()
 
 ####################################################################################################
 
-circuit_path = Path('../librepcb-examples/calidou/circuit/circuit.lp')
+circuit_path = Path('../../librepcb-examples/calidou/circuit/circuit.lp')
 
-circuit = Circuit(circuit_path)
-# kicad_schema.dump_circuit()
+circuit = Circuit.load(circuit_path)
+
