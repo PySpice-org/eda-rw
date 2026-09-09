@@ -898,146 +898,137 @@ class KiCadSchema(Sexpression):
 
         for sexpr in cdr(s_data):
             _car_value = car_value(sexpr)
-
-            if _car_value == 'version':
-                # ('version', 20210406)
-                self._version = cdr(sexpr)
-
-            elif _car_value == 'generator':
-                # ('generator', 'eeschema')
-                self._generator = cdr(sexpr)
-
-            elif _car_value == 'uuid':
-                # ('uuid', 'ca1ca076-e632-4fcc-8412-0a7bfcb4ba0b')
-                self._uuid = cdr(sexpr)
-
-            elif _car_value == 'paper':
-                # ('paper', 'A4')
-                self._paper = cdr(sexpr)
-
-            elif _car_value == 'lib_symbols':
-                for s_symbol in cdr(sexpr):
-                    self._on_lib_symbol(s_symbol)
-
-            elif _car_value == 'junction':
-                # ('junction', ('at', 111.76, 73.66), ('diameter', 1.016), ('color', 0, 0, 0, 0))
-                _, d = self.to_dict(sexpr)
-                junction = Junction(*d['at'])
-                self._junctions.append(junction)
-
-            elif _car_value == 'no_connect':
-                # (no_connect (at 177.8 50.8) (uuid b47f754e-304e-4f98-968e-20e5e5d18e29))
-                _, d = self.to_dict(sexpr)
-                no_connection = NoConnect(*d['at'])
-                self._no_connections.append(no_connection)
-
-            elif _car_value == 'bus_entry':
-                # (bus_entry (at 190.5 80.01) (size 2.54 2.54)
-                #   (stroke (width 0.1524) (type solid) (color 0 0 0 0))
-                #   (uuid 55cddc77-72fd-4412-84fa-867166598c36)
-                # )
-                _, d = self.to_dict(sexpr)
-                bus_entry = BusEntry(*d['at'])
-                self._bus_entries.append(bus_entry)
-
-            elif _car_value == 'wire':
-                # 'wire',
-                #     ('pts', ('xy', 140.97, 73.66), ('xy', 144.78, 73.66)),
-                #     ('stroke', ('width', 0), ('type', 'solid'), ('color', 0, 0, 0, 0)),
-                #     ('uuid', '53b6c7f9-e319-4bc4-82b5-f7c696f8e2db')
-                _, d = self.to_dict(sexpr)
-                self.fix_key_as_list(d['pts'], 'xy', 'xys')
-                start_point, end_point = d['pts']['xys']
-                wire = Wire(len(self._wires), start_point, end_point)
-                self._wires.append(wire)
-
-            elif _car_value == 'bus':
-                # (bus (pts (xy 101.6 81.28) (xy 127 81.28))
-                #    (stroke (width 0) (type solid) (color 0 0 0 0))
-                #    (uuid 1029c8b7-917c-4b83-8b82-040bab29659a)
-                #  )
-                _, d = self.to_dict(sexpr)
-                self.fix_key_as_list(d['pts'], 'xy', 'xys')
-                start_point, end_point = d['pts']['xys']
-                bus = Bus(len(self._buses), start_point, end_point)
-                self._buses.append(bus)
-
-            elif _car_value == 'label':
-                # (label "out" (at 134.62 86.36 180)
-                #   (effects (font (size 1.27 1.27)) (justify right bottom))
-                #   (uuid d18a8a30-fded-4d73-acd2-a0615b9eda55)
-                # )
-                _, d = self.to_dict(sexpr)
-                name = self.sattr(d)
-                at = d['at'][:2]
-                label = Label(name, *at)
-                self._labels.append(label)
-
-            elif _car_value == 'global_label':
-                # (global_label "Ground" (shape input) (at 114.3 114.3 180) (fields_autoplaced)
-                #   (effects (font (size 1.27 1.27)) (justify right))
-                #   (uuid 2d598105-6602-42a5-9940-1d3919aba7e9)
-                #   (property "Intersheet References" "${INTERSHEET_REFS}" (id 0) (at 105.2345 114.2206 0)
-                #     (effects (font (size 1.27 1.27)) (justify right) hide)
-                #   )
-                # )
-                _, d = self.to_dict(sexpr)
-                name = self.sattr(d)
-                global_label = GlobalLabel(name, *d['at'])
-                self._global_labels.append(global_label)
-
-            elif _car_value == 'hierarchical_label':
-                # (hierarchical_label "W3" (shape input) (at 228.6 50.8 0)
-                #   (effects (font (size 1.27 1.27)) (justify left))
-                #   (uuid 2f06b05a-b838-4b5e-be45-45567e9ea945)
-                # )
-                _, d = self.to_dict(sexpr)
-                name = self.sattr(d)
-                hierarchical_label = HierarchicalLabel(name, *d['at'])
-                self._hierarchical_labels.append(hierarchical_label)
-
-            elif _car_value == 'symbol':
-                self._on_symbol(sexpr)
-
-            elif _car_value == 'sheet':
-                # (sheet (at 76.2 76.2) (size 25.4 25.4) (fields_autoplaced)
-                #   (stroke (width 0.0006) (type solid) (color 0 0 0 0))
-                #   (fill (color 0 0 0 0.0000))
-                #   (uuid c25a1926-29f6-4d91-8c26-f75c9c7dff11)
-                #   (property "Nom feuille" "Sheet1" (id 0) (at 76.2 75.5643 0)
-                #     (effects (font (size 1.27 1.27)) (justify left bottom))
-                #   )
-                #   (property "Fichier de feuille" "sheet1.kicad_sch" (id 1) (at 76.2 102.1087 0)
-                #     (effects (font (size 1.27 1.27)) (justify left top))
-                #   )
-                #   (pin "W1" input (at 101.6 81.28 0)
-                #     (effects (font (size 1.27 1.27)) (justify right))
-                #     (uuid b0424fd4-3d1f-4f3b-be2f-1ff8781c6ef2)
-                #   )
-                # )
-                pass
-
-            elif _car_value == 'sheet_instances':
-                # (sheet_instances
-                #   (path "/" (page "1"))
-                #   (path "/c25a1926-29f6-4d91-8c26-f75c9c7dff11" (page "2"))
-                #   (path "/ee43db97-511c-42d6-92c0-c5fecfe9c5f6" (page "3"))
-                # )
-                pass
-
-            elif _car_value == 'symbol_instances':
-                # (symbol_instances
-                #   (path "/52705c8a-fed0-4f7d-8870-412cce75c251"
-                #     (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
-                #   )
-                #   (path "/c25a1926-29f6-4d91-8c26-f75c9c7dff11/0e0e3bc6-dd31-4ee9-83c4-2b06632480b0"
-                #     (reference "R1") (unit 1) (value "R") (footprint "")
-                #   )
-                #   (path "/ee43db97-511c-42d6-92c0-c5fecfe9c5f6/219580f3-4290-4b55-9258-083dd190dd5a"
-                #     (reference "R2") (unit 1) (value "R") (footprint "")
-                #   )
-                # )
-                pass
+            print(_car_value, type(_car_value))
+            match _car_value:
+                case 'version':
+                    # ('version', 20210406)
+                    self._version = cdr(sexpr)
+                case 'generator':
+                    # ('generator', 'eeschema')
+                    self._generator = cdr(sexpr)
+                case 'uuid':
+                    # ('uuid', 'ca1ca076-e632-4fcc-8412-0a7bfcb4ba0b')
+                    self._uuid = cdr(sexpr)
+                case 'paper':
+                    # ('paper', 'A4')
+                    self._paper = cdr(sexpr)
+                case 'lib_symbols':
+                    for s_symbol in cdr(sexpr):
+                        self._on_lib_symbol(s_symbol)
+                case 'junction':
+                    # ('junction', ('at', 111.76, 73.66), ('diameter', 1.016), ('color', 0, 0, 0, 0))
+                    _, d = self.to_dict(sexpr)
+                    junction = Junction(*d['at'])
+                    self._junctions.append(junction)
+                case 'no_connect':
+                    # (no_connect (at 177.8 50.8) (uuid b47f754e-304e-4f98-968e-20e5e5d18e29))
+                    _, d = self.to_dict(sexpr)
+                    no_connection = NoConnect(*d['at'])
+                    self._no_connections.append(no_connection)
+                case 'bus_entry':
+                    # (bus_entry (at 190.5 80.01) (size 2.54 2.54)
+                    #   (stroke (width 0.1524) (type solid) (color 0 0 0 0))
+                    #   (uuid 55cddc77-72fd-4412-84fa-867166598c36)
+                    # )
+                    _, d = self.to_dict(sexpr)
+                    bus_entry = BusEntry(*d['at'])
+                    self._bus_entries.append(bus_entry)
+                case 'wire':
+                    # 'wire',
+                    #     ('pts', ('xy', 140.97, 73.66), ('xy', 144.78, 73.66)),
+                    #     ('stroke', ('width', 0), ('type', 'solid'), ('color', 0, 0, 0, 0)),
+                    #     ('uuid', '53b6c7f9-e319-4bc4-82b5-f7c696f8e2db')
+                    _, d = self.to_dict(sexpr)
+                    self.fix_key_as_list(d['pts'], 'xy', 'xys')
+                    start_point, end_point = d['pts']['xys']
+                    wire = Wire(len(self._wires), start_point, end_point)
+                    self._wires.append(wire)
+                case 'bus':
+                    # (bus (pts (xy 101.6 81.28) (xy 127 81.28))
+                    #    (stroke (width 0) (type solid) (color 0 0 0 0))
+                    #    (uuid 1029c8b7-917c-4b83-8b82-040bab29659a)
+                    #  )
+                    _, d = self.to_dict(sexpr)
+                    self.fix_key_as_list(d['pts'], 'xy', 'xys')
+                    start_point, end_point = d['pts']['xys']
+                    bus = Bus(len(self._buses), start_point, end_point)
+                    self._buses.append(bus)
+                case 'label':
+                    # (label "out" (at 134.62 86.36 180)
+                    #   (effects (font (size 1.27 1.27)) (justify right bottom))
+                    #   (uuid d18a8a30-fded-4d73-acd2-a0615b9eda55)
+                    # )
+                    _, d = self.to_dict(sexpr)
+                    name = self.sattr(d)
+                    at = d['at'][:2]
+                    label = Label(name, *at)
+                    self._labels.append(label)
+                case 'global_label':
+                    # (global_label "Ground" (shape input) (at 114.3 114.3 180) (fields_autoplaced)
+                    #   (effects (font (size 1.27 1.27)) (justify right))
+                    #   (uuid 2d598105-6602-42a5-9940-1d3919aba7e9)
+                    #   (property "Intersheet References" "${INTERSHEET_REFS}" (id 0) (at 105.2345 114.2206 0)
+                    #     (effects (font (size 1.27 1.27)) (justify right) hide)
+                    #   )
+                    # )
+                    _, d = self.to_dict(sexpr)
+                    name = self.sattr(d)
+                    global_label = GlobalLabel(name, *d['at'])
+                    self._global_labels.append(global_label)
+                case 'hierarchical_label':
+                    # (hierarchical_label "W3" (shape input) (at 228.6 50.8 0)
+                    #   (effects (font (size 1.27 1.27)) (justify left))
+                    #   (uuid 2f06b05a-b838-4b5e-be45-45567e9ea945)
+                    # )
+                    _, d = self.to_dict(sexpr)
+                    name = self.sattr(d)
+                    hierarchical_label = HierarchicalLabel(name, *d['at'])
+                    self._hierarchical_labels.append(hierarchical_label)
+                case 'symbol':
+                    self._on_symbol(sexpr)
+                case 'sheet':
+                    # (sheet (at 76.2 76.2) (size 25.4 25.4) (fields_autoplaced)
+                    #   (stroke (width 0.0006) (type solid) (color 0 0 0 0))
+                    #   (fill (color 0 0 0 0.0000))
+                    #   (uuid c25a1926-29f6-4d91-8c26-f75c9c7dff11)
+                    #   (property "Nom feuille" "Sheet1" (id 0) (at 76.2 75.5643 0)
+                    #     (effects (font (size 1.27 1.27)) (justify left bottom))
+                    #   )
+                    #   (property "Fichier de feuille" "sheet1.kicad_sch" (id 1) (at 76.2 102.1087 0)
+                    #     (effects (font (size 1.27 1.27)) (justify left top))
+                    #   )
+                    #   (pin "W1" input (at 101.6 81.28 0)
+                    #     (effects (font (size 1.27 1.27)) (justify right))
+                    #     (uuid b0424fd4-3d1f-4f3b-be2f-1ff8781c6ef2)
+                    #   )
+                    # )
+                    pass
+                case 'sheet_instances':
+                    # (sheet_instances
+                    #   (path "/" (page "1"))
+                    #   (path "/c25a1926-29f6-4d91-8c26-f75c9c7dff11" (page "2"))
+                    #   (path "/ee43db97-511c-42d6-92c0-c5fecfe9c5f6" (page "3"))
+                    # )
+                    pass
+                case 'symbol_instances':
+                    # (symbol_instances
+                    #   (path "/52705c8a-fed0-4f7d-8870-412cce75c251"
+                    #     (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
+                    #   )
+                    #   (path "/c25a1926-29f6-4d91-8c26-f75c9c7dff11/0e0e3bc6-dd31-4ee9-83c4-2b06632480b0"
+                    #     (reference "R1") (unit 1) (value "R") (footprint "")
+                    #   )
+                    #   (path "/ee43db97-511c-42d6-92c0-c5fecfe9c5f6/219580f3-4290-4b55-9258-083dd190dd5a"
+                    #     (reference "R2") (unit 1) (value "R") (footprint "")
+                    #   )
+                    # )
+                    pass
+                case 'embedded_fonts':
+                    pass
+                case 'generator_version':
+                    pass
+                case _:
+                    raise ValueError(f'Unknown car {_car_value}')
 
     ##############################################
 
