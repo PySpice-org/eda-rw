@@ -18,8 +18,6 @@ import logging
 from pathlib import Path
 from typing import _SpecialForm
 
-# Fixme: use sexpdata ???
-# from kicadrw.sexp.deprecated.sexpression import Sexpression, car_value, cdr
 import sexpdata as S
 from rich import print
 from sexpdata import Symbol
@@ -82,7 +80,7 @@ class SexprWrapper:
                     return cls._to_python(type_, value[0])
             case Symbol():
                 match type_:
-                    case builtins.str | builtins.bool:
+                    case builtins.str | builtins.bool | builtins.int | builtins.float:
                         return cls._to_python(type_, value.value())
                 # Fixme: how to write case ???
                 if type_ == UUID:
@@ -105,23 +103,6 @@ class SexprWrapper:
         if car_value(sexpr) != self.CAR:
             raise ValueError(f"CAR is {car_value} instead of {self.CAR}")
         cdr = S.cdr(sexpr)
-        # for field, type in annotations.items():
-        #     try:
-        #         default_value = getattr(cls, field)
-        #         # print(f"{field} {type} = '{default_value}'")
-        #         setattr(self, field, kwargs.get(field, default_value))
-        #     except AttributeError:
-        #         print(f"{field} {type}")
-        #         if field in kwargs:
-        #             _ = kwargs.get(field)
-        #             match type:
-        #                 case bool():
-        #                     value = self._to_bool(cast(str, _))
-        #                 case _:
-        #                     value = _
-        #             setattr(self, field, value)
-        #         else:
-        #             raise NameError(f"field {field} is missing")  # ruff: ignore[raise-without-from-inside-except]
 
         def _setattr(field, value):
             print(f"{indent}  .{field} = {value} <{type(value)}>")
@@ -176,6 +157,26 @@ class SexprWrapper:
 
 ####################################################################################################
 
+class Variant(SexprWrapper):
+    CAR = 'variant'
+    uuid: Positional[UUID]
+    name: str
+    description: str
+
+####################################################################################################
+
+class Netclass(SexprWrapper):
+    CAR = 'netclass'
+    uuid: Positional[UUID]
+    name: str
+    default_trace_width: str
+    default_via_drill_diameter: str
+    min_copper_copper_clearance: float
+    min_copper_width: float
+    min_via_drill_diameter: float
+
+####################################################################################################
+
 class Net(SexprWrapper):
 
     """Class to implement a net"""
@@ -195,6 +196,10 @@ class Net(SexprWrapper):
 
 class Attribute(SexprWrapper):
     CAR = 'attribute'
+    name: Positional[str]
+    type: str
+    unit: str
+    value: str
 
 ####################################################################################################
 
@@ -246,6 +251,7 @@ class Circuit:
 
     @classmethod
     def load(cls, path: Path | str) -> list:
+        print(f"Load {path}")
         with Path(path).open() as fh:
             _ = S.load(fh)
         return _
@@ -281,9 +287,11 @@ class Circuit:
             car = car_value(sexpr)
             match str(car):
                 case 'variant':
-                    pass
+                    variant = Variant(sexpr)
+                    print(variant)
                 case 'netclass':
-                    pass
+                    netclass = Netclass(sexpr)
+                    print(netclass)
                 case 'net':
                     net = Net(sexpr)
                     print(net)
@@ -291,4 +299,4 @@ class Circuit:
                     component = Component(sexpr)
                     print(component)
                 case _:
-                    raise ValueError(f'Unknown car {_car_value}')
+                    raise ValueError(f'Unknown car {car}')
