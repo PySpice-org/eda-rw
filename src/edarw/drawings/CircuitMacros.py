@@ -6,24 +6,23 @@
 #
 ####################################################################################################
 
-__all__ = [
-    'CircuitMacrosDumper',
-]
-
-####################################################################################################
-
 """This dumper outputs a draft for Circuit_Macros.
 
 """
 
 ####################################################################################################
 
+__all__ = [
+    'CircuitMacrosDumper',
+]
+
+####################################################################################################
+
 import logging
 import os
+from collections.abc import Callable
 
-from typing import Callable
-
-from edarw.sexp.schema import KiCadSchema, Symbol
+from edarw.eda.kicad.schema import KiCadSchema, Symbol
 
 ####################################################################################################
 
@@ -109,7 +108,7 @@ FOO: Here
 
     ##############################################
 
-    def __init__(self, kicad_schema):
+    def __init__(self, kicad_schema: KiCadSchema) -> None:
         self._code = []
         for symbol in kicad_schema.symbols_by_position:
             self._logger.info(f"Symbol {symbol.lib_name} {symbol.reference} {symbol.simulation_device}")
