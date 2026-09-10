@@ -119,6 +119,20 @@ class Signal(SexprWrapper):
         component = self.component.component_def
         return component.get_signal(self.uuid)
 
+    @property
+    def net_obj(self) -> Net | None:
+        if self.net != 'none':
+            return self.component.circuit.get_net(self.net)
+        return None
+
+    @property
+    def net_name(self) -> str | None:
+        net = self.net_obj
+        if net is not None:
+            return net.name
+        # return None
+        return '__none__'
+
 ####################################################################################################
 
 class Component(SexprWrapper):
@@ -134,6 +148,22 @@ class Component(SexprWrapper):
     lock_assembly: bool
     attribute: list[Attribute] = None  # ty: ignore[invalid-assignment]
     signal: list[Signal] = None  # ty: ignore[invalid-assignment]
+
+    UNIT_CONSERSION = [
+        ('farad', 'F'),
+        ('henry', 'H'),
+        ('ohm', 'Ω'),
+    ]
+    UNIT_PREFIX_CONVERSION = [
+        ('giga', 'G'),
+        ('mega', 'M'),
+        ('kilo', 'k'),
+        ('milli', 'm'),
+        # ('micro', 'μ'),
+        ('micro', 'u'),
+        ('nano', 'n'),
+        ('pico', 'p'),
+    ]
 
     ##############################################
 
@@ -155,6 +185,26 @@ class Component(SexprWrapper):
     @property
     def component_def(self) -> component.Component:
         return self.circuit.project.component(self.lib_component)
+
+    ##############################################
+
+    @property
+    def evaluated_value(self) -> str:
+        def replace_unit(unit: str, conversions: list[tuple[str, str]]) -> str:
+            for a, b in conversions:
+                if a in unit:
+                    unit = unit.replace(a, b)
+                    break
+            return unit
+
+        value = self.value
+        for attribute in self.attribute:
+            unit = replace_unit(
+                replace_unit(attribute.unit, self.UNIT_CONSERSION),
+                self.UNIT_PREFIX_CONVERSION
+            )
+            value = value.replace('{{' + attribute.name + '}}', attribute.value + unit)
+        return value
 
 ####################################################################################################
 
