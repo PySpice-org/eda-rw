@@ -9,6 +9,7 @@
 __all__ = [
     'Positional',
     'SexprWrapper',
+    'Unordered',
     'UUID',
 ]
 
@@ -34,8 +35,8 @@ type UUID = str
 
 ####################################################################################################
 
-DEBUG = False
-# DEBUG = True
+# DEBUG = False
+DEBUG = True
 
 def debug_print(*args) -> None:
     if DEBUG:
@@ -67,6 +68,18 @@ class PositionalField:
 def Positional(self, type_):
     return PositionalField(type_)
 
+
+class UnorderedField:
+    def __init__(self, type_) -> None:
+        self.type = type_
+
+    def __repr__(self) -> str:
+        return f"UnorderedField[{self.type}]"
+
+@_SpecialForm  # ty: ignore[too-many-positional-arguments]
+def Unordered(self, type_):
+    return UnorderedField(type_)
+
 ####################################################################################################
 
 class SexprWrapper:
@@ -75,6 +88,11 @@ class SexprWrapper:
     RENAMING: dict[str, str] = {}
 
     _logger = _module_logger.getChild('SexprWrapper')
+
+    ##############################################
+
+    def __init_subclass__(cls) -> None:
+        cls.IRENAMING = {b: a for a, b in cls.RENAMING.items()}
 
     ##############################################
 
@@ -133,7 +151,8 @@ class SexprWrapper:
         car = car_value(sexpr)
         if car != self.CAR:
             raise ValueError(f"CAR is {car} instead of {self.CAR}")
-        cdr = S.cdr(sexpr)
+        cdr_orig = S.cdr(sexpr)
+        cdr = list(cdr_orig)
 
         def _setattr(field, value):
             debug_print(f"{indent}  .{field} = {value} <{type(value)}>")
@@ -148,14 +167,30 @@ class SexprWrapper:
             debug_print(f"{indent}  .{field} += {value} <{type(value)}>")
             getattr(self, field).append(value)
 
-        do_pop = True
+        positional = {}
+        ordered = {}
+        unordered = {}
         for field, type_ in annotations.items():
-            # Fixme: in some case attribute order is not enforced, e.g. To From
-            #  for on cdr ? and lookup attribute ?
+            match type_:
+                case PositionalField():
+                    d = positional
+                case UnorderedField():
+                    d = unordered
+                case _:
+                    d = ordered
+            d[field] = type_
+        positional_ordered = {}
+        positional_ordered.update(positional)
+        positional_ordered.update(ordered)
+
+        do_pop = True
+        for field, type_ in positional_ordered.items():
+            # lookup if the field is renamed to fullfill Python syntac
             py_field = field
             field = self.RENAMING.get(py_field, py_field)
             if py_field != field:
                 debug_print(f"Field renamed {field} -> {py_field}")
+            # pop cdr
             if do_pop:
                 # get cdr head
                 field_sexpr = cdr.pop(0) if cdr else None
@@ -163,49 +198,70 @@ class SexprWrapper:
             try:
                 default_value = getattr(cls, py_field)
                 has_default = True
-                debug_print(f"{field}<{type_}> = {field_sexpr} = '{default_value}'")
             except AttributeError:
                 has_default = False
-                debug_print(f"{field}<{type_}> = {field_sexpr}")
-            if isinstance(type_, PositionalField):
-                value = self._to_python(type_.type, field_sexpr, indent_level)
-                _setattr(py_field, value)
-            else:
-                is_list = hasattr(type_, '__origin__') and type_.__origin__ == builtins.list
-                # if is_list:
-                #     debug_print('  is list')
-                if field_sexpr is None:  # cdr was poped
-                    car = None
-                    field_cdr = None
-                else:
-                    car = car_value(field_sexpr)
-                    field_cdr = S.cdr(field_sexpr)
-                if car == field:  # car match field
-                    # debug_print(f'  field match {car}')
-                    if is_list:
-                        if not hasattr(self, py_field) or getattr(self, py_field) is None:
-                            setattr(self, py_field, [])
-                        obj_type = type_.__args__[0]
-                        _append(py_field, obj_type, field_sexpr)
-                        while cdr and car_value(cdr[0]) == field:
-                            field_sexpr = cdr.pop(0)
-                            _append(py_field, obj_type, field_sexpr)
+            debug_print(
+                f"{field}<{type_}> = {field_sexpr}" +
+                " = '{default_value}'" if has_default else ' '
+            )
+            #
+            match type_:
+                case PositionalField():
+                    value = self._to_python(type_.type, field_sexpr, indent_level)
+                    _setattr(py_field, value)
+                case _:
+                    is_list = hasattr(type_, '__origin__') and type_.__origin__ == builtins.list
+                    # if is_list:
+                    #     debug_print('  is list')
+                    if field_sexpr is None:  # cdr was poped
+                        car = None
+                        field_cdr = None
                     else:
-                        if isclass(type_) and issubclass(type_, SexprWrapper):
-                            value = type_(field_sexpr, indent_level=indent_level + 1, parent=self)
-                        else:
-                            value = self._to_python(type_, field_cdr, indent_level)
-                        _setattr(py_field, value)
-                else:  # field is not specified
-                    if has_default:
-                        # debug_print('  set default value')
+                        car = car_value(field_sexpr)
+                        field_cdr = S.cdr(field_sexpr)
+                    if car == field:  # car match field
+                        # debug_print(f'  field match {car}')
                         if is_list:
-                            _setattr(py_field, [])
+                            if not hasattr(self, py_field) or getattr(self, py_field) is None:
+                                setattr(self, py_field, [])
+                            obj_type = type_.__args__[0]
+                            _append(py_field, obj_type, field_sexpr)
+                            while cdr and car_value(cdr[0]) == field:
+                                field_sexpr = cdr.pop(0)
+                                _append(py_field, obj_type, field_sexpr)
                         else:
-                            _setattr(py_field, default_value)
-                        do_pop = False  # already done
-                    else:
-                        raise NameError(f"field {field} is missing for {self.__class__}")
+                            if isclass(type_) and issubclass(type_, SexprWrapper):
+                                value = type_(field_sexpr, indent_level=indent_level + 1, parent=self)
+                            else:
+                                value = self._to_python(type_, field_cdr, indent_level)
+                            _setattr(py_field, value)
+                    else:  # field is not specified
+                        if has_default:
+                            # debug_print('  set default value')
+                            if is_list:
+                                _setattr(py_field, [])
+                            else:
+                                _setattr(py_field, default_value)
+                            do_pop = False  # already done
+                        else:
+                            raise NameError(f"field {field} is missing for {self.__class__}")
+
+        if unordered:
+            print(unordered)
+            self.unordered = []
+            for field_sexpr in cdr_orig:
+                field = car_value(field_sexpr)
+                py_field = self.IRENAMING.get(field, field)
+                if py_field != field:
+                    debug_print(f"Field renamed {field} -> {py_field}")
+                if py_field not in unordered:
+                    continue
+                type_ = unordered[py_field].type
+                field_cdr = S.cdr(field_sexpr)
+                value = self._to_python(type_, field_cdr, indent_level)
+                self.unordered.append((field, value))
+            print(self.unordered)
+            1/0
 
     ##############################################
 
