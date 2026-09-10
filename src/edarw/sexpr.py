@@ -9,7 +9,6 @@
 __all__ = [
     'Positional',
     'SexprWrapper',
-    'Unordered',
     'UUID',
 ]
 
@@ -35,8 +34,8 @@ type UUID = str
 
 ####################################################################################################
 
-# DEBUG = False
-DEBUG = True
+DEBUG = False
+# DEBUG = True
 
 def debug_print(*args) -> None:
     if DEBUG:
@@ -67,18 +66,6 @@ class PositionalField:
 @_SpecialForm  # ty: ignore[too-many-positional-arguments]
 def Positional(self, type_):
     return PositionalField(type_)
-
-
-class UnorderedField:
-    def __init__(self, type_) -> None:
-        self.type = type_
-
-    def __repr__(self) -> str:
-        return f"UnorderedField[{self.type}]"
-
-@_SpecialForm  # ty: ignore[too-many-positional-arguments]
-def Unordered(self, type_):
-    return UnorderedField(type_)
 
 ####################################################################################################
 
@@ -167,24 +154,8 @@ class SexprWrapper:
             debug_print(f"{indent}  .{field} += {value} <{type(value)}>")
             getattr(self, field).append(value)
 
-        positional = {}
-        ordered = {}
-        unordered = {}
-        for field, type_ in annotations.items():
-            match type_:
-                case PositionalField():
-                    d = positional
-                case UnorderedField():
-                    d = unordered
-                case _:
-                    d = ordered
-            d[field] = type_
-        positional_ordered = {}
-        positional_ordered.update(positional)
-        positional_ordered.update(ordered)
-
         do_pop = True
-        for field, type_ in positional_ordered.items():
+        for field, type_ in annotations.items():
             # lookup if the field is renamed to fullfill Python syntac
             py_field = field
             field = self.RENAMING.get(py_field, py_field)
@@ -245,23 +216,6 @@ class SexprWrapper:
                             do_pop = False  # already done
                         else:
                             raise NameError(f"field {field} is missing for {self.__class__}")
-
-        if unordered:
-            print(unordered)
-            self.unordered = []
-            for field_sexpr in cdr_orig:
-                field = car_value(field_sexpr)
-                py_field = self.IRENAMING.get(field, field)
-                if py_field != field:
-                    debug_print(f"Field renamed {field} -> {py_field}")
-                if py_field not in unordered:
-                    continue
-                type_ = unordered[py_field].type
-                field_cdr = S.cdr(field_sexpr)
-                value = self._to_python(type_, field_cdr, indent_level)
-                self.unordered.append((field, value))
-            print(self.unordered)
-            1/0
 
     ##############################################
 
