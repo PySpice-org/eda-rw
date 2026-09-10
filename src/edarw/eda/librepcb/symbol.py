@@ -6,7 +6,7 @@
 #
 ####################################################################################################
 
-__all__ = ['Component']
+__all__ = ['Symbol']
 
 ####################################################################################################
 
@@ -28,69 +28,57 @@ _module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
 
-class Attribute(SexprWrapper):
-    CAR = 'attribute'
-    name: Positional[str]
-    type: str
-    unit: str
+class Pin(SexprWrapper):
+    CAR = 'pin'
+    uuid: Positional[UUID]
+    position: tuple[float, float] = None  # ty: ignore[invalid-assignment]
+    rotation: float = None  # ty: ignore[invalid-assignment]
+    length: float = None  # ty: ignore[invalid-assignment]
+    name_position: tuple[float, float] = None  # ty: ignore[invalid-assignment]
+    name_rotation: float = None  # ty: ignore[invalid-assignment]
+    name_height: float = None  # ty: ignore[invalid-assignment]
+    name_align: list[str] = None  # ty: ignore[invalid-assignment]
+
+###################################################################################################
+
+class Vertex(SexprWrapper):
+    CAR = 'vertex'
+    position: tuple[float, float]
+    angle: float
+
+###################################################################################################
+
+class Polygon(SexprWrapper):
+    CAR = 'polygon'
+    uuid: Positional[UUID]
+    layer: str
+    width: float
+    fill: bool
+    grab_area: bool
+    vertex: list[Vertex]
+
+####################################################################################################
+
+class Text(SexprWrapper):
+    CAR = 'text'
+    uuid: Positional[UUID]
+    layer: str
+    height: float
+    align: list[str]
+    position: tuple[float, float]
+    rotation: float
+    lock: bool
     value: str
 
 ####################################################################################################
 
-class Signal(SexprWrapper):
-    CAR = 'signal'
+class Symbol(SexprWrapper):
+
+    """Class to read a LibrePCB Symbol"""
+
+    CAR = 'librepcb_symbol'
     uuid: Positional[UUID]
     name: str
-    role: str
-    required: bool
-    negated: bool
-    clock: bool
-    forced_net: str  # Fixme: ???
-
-    ##############################################
-
-    def __repr__(self) -> str:
-        return f"Signal {self.uuid} name='{self.name}' role='{self.role}'"
-
-####################################################################################################
-
-class Pin(SexprWrapper):
-    CAR = 'pin'
-    uuid: Positional[UUID]
-    signal: UUID
-    text: str
-
-###################################################################################################
-
-class Gate(SexprWrapper):
-    CAR = 'gate'
-    uuid: Positional[UUID]
-    symbol: UUID
-    position: tuple[float, float]
-    rotation: float
-    required: bool
-    suffix: str
-    pin: list[Pin] = None  # ty: ignore[invalid-assignment]
-
-####################################################################################################
-
-class Variant(SexprWrapper):
-    CAR = 'variant'
-    uuid: Positional[UUID]
-    norm: str
-    name: str
-    description: str
-    gate: Gate
-
-####################################################################################################
-
-class Component(SexprWrapper):
-
-    """Class to read a LibrePCB Component"""
-
-    CAR = 'librepcb_component'
-    uuid: Positional[UUID]
-    name: list[str]  # Fixme: local
     description: list[str]
     keywords: str
     author: str
@@ -99,14 +87,13 @@ class Component(SexprWrapper):
     deprecated: bool
     generated_by: str
     category: str
-    schematic_only: bool
-    default_value: str
-    prefix: str
-    attribute: list[Attribute] = None  # ty: ignore[invalid-assignment]
-    signal: list[Signal] = None  # ty: ignore[invalid-assignment]
-    variant: list[Variant] = None  # ty: ignore[invalid-assignment]
+    grid_interval: float
+    pin: list[Pin] = None  # ty: ignore[invalid-assignment]
+    polygon: list[Polygon] = None  # ty: ignore[invalid-assignment]
+    text: list[Text] = None  # ty: ignore[invalid-assignment]
+    approved: list[str] = None  # ty: ignore[invalid-assignment]
 
-    _logger = _module_logger.getChild('Component')
+    _logger = _module_logger.getChild('Symbol')
 
     ##############################################
 
@@ -119,14 +106,8 @@ class Component(SexprWrapper):
     def __init__(self, sexpr: list, project: Project) -> None:
         super().__init__(sexpr)
         self._project = project
-        self._signal_map: dict[UUID, Signal] = {_.uuid: _ for _ in self.signal}
 
     ##############################################
 
     def __repr__(self) -> str:
-        return f"Component uuid={self.uuid} name='{self.name}'"
-
-    ##############################################
-
-    def get_signal(self, uuid: UUID) -> Signal:
-        return self._signal_map[uuid]
+        return f"Symbol uuid={self.uuid} name='{self.name}'"

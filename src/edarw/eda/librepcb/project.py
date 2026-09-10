@@ -19,6 +19,8 @@ from edarw.sexpr import UUID, Positional, SexprWrapper
 
 from .circuit import Circuit
 from .component import Component
+from .schematic import Schematic
+from .symbol import Symbol
 
 # from rich import print
 
@@ -55,7 +57,9 @@ class Project(SexprWrapper):
         super().__init__(sexpr)
         self._project_path = project_path
         self._circuit: Circuit | None = None
+        self._schematic: Schematic | None = None
         self._components: dict[UUID, Component] = {}
+        self._symbols: dict[UUID, Symbol] = {}
         self._load_library()
 
     ##############################################
@@ -74,6 +78,12 @@ class Project(SexprWrapper):
             component_path = component_dir / 'component.lp'
             component = Component.load(component_path, self)
             self._components[component.uuid] = component
+        sym_path = library_path / 'sym'
+        for symbol_dir in sym_path.iterdir():
+            # symbol_uuid = symbol_dir.name
+            symbol_path = symbol_dir / 'symbol.lp'
+            symbol = Symbol.load(symbol_path, self)
+            self._symbols[symbol.uuid] = symbol
 
     def component(self, uuid: UUID) -> Component:
         return self._components[uuid]
@@ -81,6 +91,13 @@ class Project(SexprWrapper):
     @property
     def components(self) -> ValuesView[Component]:
         return self._components.values()
+
+    def symbol(self, uuid: UUID) -> Symbol:
+        return self._symbols[uuid]
+
+    @property
+    def symbols(self) -> ValuesView[Symbol]:
+        return self._symbols.values()
 
     ##############################################
 
@@ -90,3 +107,12 @@ class Project(SexprWrapper):
             circuit_path = self._project_path / 'circuit/circuit.lp'
             self._circuit = Circuit.load(circuit_path, self)
         return self._circuit
+
+    ##############################################
+
+    @property
+    def schematic(self) -> Schematic:
+        if self._schematic is None:
+            schematic_path = self._project_path / 'schematics/main/schematic.lp'
+            self._schematic = Schematic.load(schematic_path, self)
+        return self._schematic

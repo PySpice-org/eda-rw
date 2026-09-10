@@ -6,7 +6,7 @@
 #
 ####################################################################################################
 
-__all__ = ['Component']
+__all__ = ['Schematic']
 
 ####################################################################################################
 
@@ -28,85 +28,87 @@ _module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
 
-class Attribute(SexprWrapper):
-    CAR = 'attribute'
-    name: Positional[str]
-    type: str
-    unit: str
+class Text(SexprWrapper):
+    CAR = 'text'
+    uuid: Positional[UUID]
+    layer: str
+    height: float
+    align: list[str]
+    position: tuple[float, float]
+    rotation: float
+    lock: bool
     value: str
 
 ####################################################################################################
 
-class Signal(SexprWrapper):
-    CAR = 'signal'
+class Symbol(SexprWrapper):
+    CAR = 'symbol'
     uuid: Positional[UUID]
-    name: str
-    role: str
-    required: bool
-    negated: bool
-    clock: bool
-    forced_net: str  # Fixme: ???
-
-    ##############################################
-
-    def __repr__(self) -> str:
-        return f"Signal {self.uuid} name='{self.name}' role='{self.role}'"
+    component: UUID
+    lib_gate: UUID
+    text: list[Text] = None  # ty: ignore[invalid-assignment]
 
 ####################################################################################################
 
-class Pin(SexprWrapper):
-    CAR = 'pin'
-    uuid: Positional[UUID]
-    signal: UUID
-    text: str
+class Grid(SexprWrapper):
+    CAR = 'grid'
+    interval: float
+    unit: str
 
-###################################################################################################
+####################################################################################################
 
-class Gate(SexprWrapper):
-    CAR = 'gate'
+class From(SexprWrapper):
+    CAR = 'from'
+    junction: UUID = None
+    symbol: UUID = None
+    pin: UUID = None
+
+class To(SexprWrapper):
+    CAR = 'to'
+    junction: UUID = None
+    symbol: UUID = None
+    pin: UUID = None
+
+####################################################################################################
+
+class Line(SexprWrapper):
+    CAR = 'line'
+    RENAMING = {'from_': 'from'}
     uuid: Positional[UUID]
-    symbol: UUID
+    width: float
+    from_: From
+    to: To
+
+####################################################################################################
+
+class Junction(SexprWrapper):
+    CAR = 'junction'
+    uuid: Positional[UUID]
     position: tuple[float, float]
-    rotation: float
-    required: bool
-    suffix: str
-    pin: list[Pin] = None  # ty: ignore[invalid-assignment]
 
 ####################################################################################################
 
-class Variant(SexprWrapper):
-    CAR = 'variant'
+class NetSegment(SexprWrapper):
+    CAR = 'netsegment'
     uuid: Positional[UUID]
-    norm: str
+    net: UUID
+    junction: list[Junction] = None  # ty: ignore[invalid-assignment]
+    line: list[Line]
+
+####################################################################################################
+
+class Schematic(SexprWrapper):
+
+    """Class to read a LibrePCB Symbol"""
+
+    CAR = 'librepcb_schematic'
+    uuid: Positional[UUID]
     name: str
-    description: str
-    gate: Gate
+    grid: Grid
+    symbol: list[Symbol] = None  # ty: ignore[invalid-assignment]
+    netsegment: list[NetSegment] = None  # ty: ignore[invalid-assignment]
 
-####################################################################################################
-
-class Component(SexprWrapper):
-
-    """Class to read a LibrePCB Component"""
-
-    CAR = 'librepcb_component'
-    uuid: Positional[UUID]
-    name: list[str]  # Fixme: local
-    description: list[str]
-    keywords: str
-    author: str
-    version: str
-    created: datetime
-    deprecated: bool
-    generated_by: str
-    category: str
-    schematic_only: bool
-    default_value: str
-    prefix: str
-    attribute: list[Attribute] = None  # ty: ignore[invalid-assignment]
-    signal: list[Signal] = None  # ty: ignore[invalid-assignment]
-    variant: list[Variant] = None  # ty: ignore[invalid-assignment]
-
-    _logger = _module_logger.getChild('Component')
+    _logger = _module_logger.getChild('Schematic')
 
     ##############################################
 
@@ -119,14 +121,8 @@ class Component(SexprWrapper):
     def __init__(self, sexpr: list, project: Project) -> None:
         super().__init__(sexpr)
         self._project = project
-        self._signal_map: dict[UUID, Signal] = {_.uuid: _ for _ in self.signal}
 
     ##############################################
 
     def __repr__(self) -> str:
-        return f"Component uuid={self.uuid} name='{self.name}'"
-
-    ##############################################
-
-    def get_signal(self, uuid: UUID) -> Signal:
-        return self._signal_map[uuid]
+        return f"Schematic uuid={self.uuid} name='{self.name}'"

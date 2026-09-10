@@ -34,6 +34,9 @@ for component in project.components:
     print(component)
     for signal in component.signal:
         print(indent, signal)
+for symbol in project.symbols:
+    print(symbol)
+    print(symbol.to_json())
 
 print()
 console.rule()
@@ -49,3 +52,6 @@ for component in circuit.component:
     for signal in component.signal:
         print(indent, signal)
         print(indent * 2, signal.signal_def)
+
+schematic = project.schematic
+print(schematic.to_json())
