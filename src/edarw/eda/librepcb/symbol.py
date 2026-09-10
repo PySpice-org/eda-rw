@@ -49,6 +49,12 @@ class Vertex(SexprWrapper):
 ###################################################################################################
 
 class Polygon(SexprWrapper):
+    # polygon is used for arc
+    #     (polygon d353fb00-6a7d-4ca1-a724-824e25005f10 (layer sym_outlines)
+    #         (width 0.2) (fill false) (grab_area false)
+    #         (vertex (position 17.78 -5.08) (angle 116.565051))
+    #         (vertex (position 6.752232 1.735535) (angle 0.0))
+    #     )
     CAR = 'polygon'
     uuid: Positional[UUID]
     layer: str
@@ -56,6 +62,18 @@ class Polygon(SexprWrapper):
     fill: bool
     grab_area: bool
     vertex: list[Vertex]
+
+###################################################################################################
+
+class Circle(SexprWrapper):
+    CAR = 'circle'
+    uuid: Positional[UUID]
+    layer: str
+    width: float
+    fill: bool
+    grab_area: bool
+    diameter: float
+    position: tuple[float, float]
 
 ####################################################################################################
 
@@ -69,6 +87,18 @@ class Text(SexprWrapper):
     rotation: float
     lock: bool
     value: str
+
+####################################################################################################
+
+class Image(SexprWrapper):
+    CAR = 'image'
+    uuid: Positional[UUID]
+    file: str
+    position: tuple[float, float]
+    rotation: float
+    width: float
+    height: float
+    border: str
 
 ####################################################################################################
 
@@ -91,6 +121,7 @@ class Symbol(SexprWrapper):
     pin: list[Pin] = None  # ty: ignore[invalid-assignment]
     polygon: list[Polygon] = None  # ty: ignore[invalid-assignment]
     text: list[Text] = None  # ty: ignore[invalid-assignment]
+    image: list[Image] = None  # ty: ignore[invalid-assignment]
     approved: list[str] = None  # ty: ignore[invalid-assignment]
 
     _logger = _module_logger.getChild('Symbol')

@@ -11,7 +11,6 @@ __all__ = ['Schematic']
 ####################################################################################################
 
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Self
 
@@ -59,15 +58,15 @@ class Grid(SexprWrapper):
 
 class From(SexprWrapper):
     CAR = 'from'
-    junction: UUID = None
     symbol: UUID = None
     pin: UUID = None
+    junction: UUID = None
 
 class To(SexprWrapper):
     CAR = 'to'
-    junction: UUID = None
     symbol: UUID = None
     pin: UUID = None
+    junction: UUID = None
 
 ####################################################################################################
 
