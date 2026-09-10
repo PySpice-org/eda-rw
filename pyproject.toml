@@ -10,7 +10,6 @@ version = "0.1"
 dependencies = [
   "pyyaml>=6.0.3",
   "sexpdata>=1.0.2",
-  "ty==0.0.77",
 ]
 requires-python = ">=3.15"
 
@@ -47,8 +46,8 @@ dev = [
   "invoke",
   "rassumfrassum>=0.3.4",
   "rich>=15.0.0",
-  "ruff>=0.16.5",
-  "ty>=0.0.75",
+  "ruff>=0.16.6",
+  "ty>=0.0.80",
 ]
 
 
