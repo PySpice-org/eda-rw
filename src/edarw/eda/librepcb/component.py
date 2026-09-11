@@ -15,9 +15,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Self
 
-from edarw.sexpr import UUID, Positional, SexprWrapper
-
 from rich import print
+
+from edarw.sexpr import UUID, Positional, SexprWrapper
 
 if TYPE_CHECKING:
     from .project import Project
@@ -120,13 +120,17 @@ class Component(SexprWrapper):
         super().__init__(sexpr)
         self._project = project
         self._signal_map: dict[UUID, Signal] = {_.uuid: _ for _ in self.signal}
-
-    ##############################################
-
-    def __repr__(self) -> str:
-        return f"Component uuid={self.uuid} name='{self.name}'"
+        self._variant_map: dict[UUID, Variant] = {_.uuid: _ for _ in self.variant}
 
     ##############################################
 
     def get_signal(self, uuid: UUID) -> Signal:
         return self._signal_map[uuid]
+
+    def get_variant(self, uuid: UUID) -> Variant:
+        return self._variant_map[uuid]
+
+    ##############################################
+
+    def __repr__(self) -> str:
+        return f"Component uuid={self.uuid} name='{self.name}'"

@@ -74,11 +74,14 @@ class SexprWrapper:
     CAR: str
     RENAMING: dict[str, str] = {}
 
+    CLASSES: list[object] = []
+
     _logger = _module_logger.getChild('SexprWrapper')
 
     ##############################################
 
     def __init_subclass__(cls) -> None:
+        cls.CLASSES.append(cls)
         cls.IRENAMING = {b: a for a, b in cls.RENAMING.items()}
 
     ##############################################

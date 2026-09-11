@@ -240,11 +240,11 @@ class Circuit(SexprWrapper):
 
     ##############################################
 
-    def get_net(self, uuid: UUID) -> Net:
-        return self._net_map[uuid]
-
-    ##############################################
-
     @property
     def project(self) -> Project:
         return self._project
+
+    ##############################################
+
+    def get_net(self, uuid: UUID) -> Net:
+        return self._net_map[uuid]

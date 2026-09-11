@@ -12,13 +12,14 @@ __all__ = ['Schematic']
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
-
-from edarw.sexpr import UUID, Positional, SexprWrapper
+from typing import TYPE_CHECKING, Self, cast
 
 from rich import print
 
+from edarw.sexpr import UUID, Positional, SexprWrapper
+
 if TYPE_CHECKING:
+    from .component import Component, Gate
     from .project import Project
 
 ####################################################################################################
@@ -43,9 +44,26 @@ class Text(SexprWrapper):
 class Symbol(SexprWrapper):
     CAR = 'symbol'
     uuid: Positional[UUID]
-    component: UUID
-    lib_gate: UUID
+    component: UUID  # -> Circuit.component
+    lib_gate: UUID  # -> Component.gate
+    position: tuple[float, float]
     text: list[Text] = None  # ty: ignore[invalid-assignment]
+
+    ##############################################
+
+    @property
+    def schematic(self) -> Schematic:
+        return cast(Schematic, self._parent)
+
+    @property
+    def project(self) -> Project:
+        return self.schematic.project
+
+    ##############################################
+
+    @property
+    def gate(self) -> Gate:
+        return self.project.gate(self.lib_gate)
 
 ####################################################################################################
 
@@ -56,17 +74,28 @@ class Grid(SexprWrapper):
 
 ####################################################################################################
 
-class From(SexprWrapper):
-    CAR = 'from'
-    symbol: UUID = None
-    pin: UUID = None
-    junction: UUID = None
+class FromMixin:
 
-class To(SexprWrapper):
+    @property
+    def is_junction(self) -> bool:
+        return self.junction is not None
+
+    @property
+    def is_pin(self) -> bool:
+        return self.junction is None
+
+
+class From(SexprWrapper, FromMixin):
+    CAR = 'from'
+    symbol: UUID = None  # ty: ignore[invalid-assignment]
+    pin: UUID = None  # ty: ignore[invalid-assignment]
+    junction: UUID = None  # ty: ignore[invalid-assignment]
+
+class To(SexprWrapper, FromMixin):
     CAR = 'to'
-    symbol: UUID = None
-    pin: UUID = None
-    junction: UUID = None
+    symbol: UUID = None  # ty: ignore[invalid-assignment]
+    pin: UUID = None  # ty: ignore[invalid-assignment]
+    junction: UUID = None  # ty: ignore[invalid-assignment]
 
 ####################################################################################################
 
@@ -94,6 +123,17 @@ class NetSegment(SexprWrapper):
     junction: list[Junction] = None  # ty: ignore[invalid-assignment]
     line: list[Line]
 
+    ##############################################
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._junction_map = {_.uuid: _ for _ in self.junction}
+
+    ##############################################
+
+    def get_jonction(self, uuid: UUID) -> Junction:
+        return self._junction_map[uuid]
+
 ####################################################################################################
 
 class Schematic(SexprWrapper):
@@ -120,6 +160,22 @@ class Schematic(SexprWrapper):
     def __init__(self, sexpr: list, project: Project) -> None:
         super().__init__(sexpr)
         self._project = project
+        self._symbol_map = {_.uuid: _ for _ in self.symbol}
+        self._netsegment_map = {_.uuid: _ for _ in self.netsegment}
+
+    ##############################################
+
+    @property
+    def project(self) -> Project:
+        return self._project
+
+    ##############################################
+
+    def get_symbol(self, uuid: UUID) -> Symbol:
+        return self._symbol_map[uuid]
+
+    def get_netsegment(self, uuid: UUID) -> NetSegment:
+        return self._netsegment_map[uuid]
 
     ##############################################
 

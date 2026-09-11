@@ -15,10 +15,10 @@ from collections.abc import ValuesView
 from datetime import datetime
 from pathlib import Path
 
-from edarw.sexpr import UUID, Positional, SexprWrapper
+from edarw.sexpr import UUID, Positional, Self, SexprWrapper
 
 from .circuit import Circuit
-from .component import Component
+from .component import Component, Gate
 from .schematic import Schematic
 from .symbol import Symbol
 
@@ -84,6 +84,12 @@ class Project(SexprWrapper):
             symbol_path = symbol_dir / 'symbol.lp'
             symbol = Symbol.load(symbol_path, self)
             self._symbols[symbol.uuid] = symbol
+        self._gate_map = {}
+        for component in self._components.values():
+            for variant in component.variant:
+                gate = variant.gate
+                print('gate', gate.uuid)
+                self._gate_map[gate.uuid] = gate
 
     def component(self, uuid: UUID) -> Component:
         return self._components[uuid]
@@ -98,6 +104,9 @@ class Project(SexprWrapper):
     @property
     def symbols(self) -> ValuesView[Symbol]:
         return self._symbols.values()
+
+    def gate(self, uuid: UUID) -> Gate:
+        return self._gate_map[uuid]
 
     ##############################################
 
