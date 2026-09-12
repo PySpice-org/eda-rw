@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Self, cast
 
 from rich import print
 
-from edarw.geometry import Position as gPosition, EuclidianMatrice
+from edarw.geometry import Position as gPosition, EuclidianMatrix
 from edarw.sexpr import UUID
 
 from .common import LibreSexpr, Position, UuidSexpr
@@ -99,7 +99,7 @@ class FromMixin(LibreSexpr):
             symbol = self.symbol_obj
             _ = self.pin_obj
             pin = _['symbol.Pin'] if isinstance(_, dict) else _
-            position = pin.position_obj * EuclidianMatrice.rotation(symbol.rotation)
+            position = pin.position_obj * EuclidianMatrix.rotation(symbol.rotation)
             position += symbol.position_obj
             # print('symbol', position, point.symbol_obj.to_json(), pin.to_json())
         return position

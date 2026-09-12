@@ -6,8 +6,15 @@
 #
 ####################################################################################################
 
+"""This module provides a basic implementation for geometry primitive like Position, Vector and
+EuclidianMatrix.
+
+"""
+
+####################################################################################################
+
 __all__ = [
-    'EuclidianMatrice',
+    'EuclidianMatrix',
     'Position',
     'PositionAngle',
     'Vector',
@@ -17,7 +24,6 @@ __all__ = [
 
 import math
 from collections.abc import Iterator
-from typing import Any
 
 ####################################################################################################
 
@@ -27,61 +33,95 @@ EPSILON = 1e-4  # numerical tolerance to match coordinate
 
 type Matrix2D = tuple[tuple[int, int], tuple[int, int]]
 
-class EuclidianMatrice:
+class EuclidianMatrix:
 
     ##############################################
 
     @classmethod
-    def identity(cls) -> Matrix2D:
-        return ((1, 0),
-                (0, 1))
+    def identity(cls) -> EuclidianMatrix:
+        _ = ((1, 0),
+             (0, 1))
+        return cls(_)
 
     ##############################################
 
     @classmethod
-    def parity(cls) -> Matrix2D:
-        return ((-1, +0),
-                (+0, -1))
+    def parity(cls) -> EuclidianMatrix:
+        _ = ((-1, +0),
+             (+0, -1))
+        return cls(_)
 
     ##############################################
 
     @classmethod
-    def rotation(cls, angle: int) -> Matrix2D:
+    def rotation(cls, angle: int) -> EuclidianMatrix:
         match angle:
             case 0:
                 return cls.identity()
             case 90 | -270:
-                return ((0, -1),
-                        (1, +0))
+                _ = ((0, -1),
+                     (1, +0))
             case 180 | -180:
                 # mirror x and y
-                return ((-1, 0),
-                        (+0, -1))
+                _ = ((-1, 0),
+                     (+0, -1))
             case 270 | -90:
                 # 90 and mirror y
-                return ((+0, 1),
-                        (-1, 0))
+                _ = ((+0, 1),
+                     (-1, 0))
             case _:
                 raise NotImplementedError(f"angle {angle}")
+        return cls(_)
 
     ##############################################
 
-    # Fixme: implement mul
+    def __init__(self, matrix: Matrix2D) -> None:
+        self.m = matrix
 
-    @classmethod
-    def x_mirror(cls, matrice: Matrix2D) -> Matrix2D:
-        return ((-matrice[0][0], -matrice[0][1]),
-                (+matrice[1][0], +matrice[1][1]))
+    ##############################################
 
-    @classmethod
-    def y_mirror(cls, matrice: Matrix2D) -> Matrix2D:
-        return ((+matrice[0][0], +matrice[0][1]),
-                (-matrice[1][0], -matrice[1][1]))
+    @property
+    def flat(self) -> tuple[int, int, int, int]:
+        return tuple(list(self.m[0]) + list(self.m[1]))  # ty: ignore[invalid-return-type]
 
-    @classmethod
-    def xy_mirror(cls, matrice: Matrix2D) -> Matrix2D:
-        return ((-matrice[0][0], +matrice[0][1]),
-                (+matrice[1][0], -matrice[1][1]))
+    # def __getitem__(self, ) -> int:
+
+    ##############################################
+
+    def __mul__(self, matrix: EuclidianMatrix) -> EuclidianMatrix:
+        a00, a01, a10, a11 = self.flat
+        b00, b01, b10, b11 = matrix.flat
+        # m_ij = a_ik * b_kj
+        m00 = a00 * b00 + a01 * b10
+        m10 = a10 * b00 + a11 * b10
+        m01 = a00 * b01 + a01 * b11
+        m11 = a10 * b01 + a11 * b11
+        _ = ((m00, m01), (m10, m11))
+        return self.__class__(_)
+
+    ##############################################
+
+    @property
+    def x_mirror(self) -> EuclidianMatrix:
+        m00, m01, m10, m11 = self.flat
+        _ = ((-m00, -m01),
+             (+m10, +m11))
+        return self.__class__(_)
+
+    @property
+    def y_mirror(self) -> EuclidianMatrix:
+        m00, m01, m10, m11 = self.flat
+        _ = ((+m00, +m01),
+             (-m10, -m11))
+        return self.__class__(_)
+
+    @property
+    def xy_mirror(self) -> EuclidianMatrix:
+        # self * parity
+        m00, m01, m10, m11 = self.flat
+        _ = ((-m00, +m01),
+             (+m10, -m11))
+        return self.__class__(_)
 
 ####################################################################################################
 
@@ -141,14 +181,19 @@ class Position:
 
     ##############################################
 
-    def __mul__(self, matrice: Matrix2D) -> Vector:
-        x = matrice[0][0] * self._x + matrice[0][1] * self._y
-        y = matrice[1][0] * self._x + matrice[1][1] * self._y
+    def __mul__(self, matrix: EuclidianMatrix) -> Vector:
+        m00, m01, m10, m11 = matrix.flat
+        x = m00 * self._x + m01 * self._y
+        y = m10 * self._x + m11 * self._y
         return Vector(x, y)
 
 ####################################################################################################
 
 class Vector(Position):
+
+    @classmethod
+    def direction(self, length: float, angle: int) -> Vector:
+        return Vector(length) * EuclidianMatrix.rotation(angle)
 
     ##############################################
 

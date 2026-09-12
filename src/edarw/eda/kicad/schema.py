@@ -49,7 +49,7 @@ from collections.abc import Iterable, Iterator
 from itertools import combinations
 from typing import Any
 
-from edarw.geometry import EuclidianMatrice, Position, PositionAngle, Vector
+from edarw.geometry import EuclidianMatrix, Position, PositionAngle, Vector
 
 # Fixme: use sexpdata ???
 from .deprecated.sexpression import Sexpression, car_value, cdr
@@ -387,13 +387,13 @@ class Symbol(PositionAngle):
         """Compute the pin position in the sheet"""
         v = Vector(pin.x, -pin.y)
         # angle = self._angle
-        matrice = EuclidianMatrice.rotation(self._angle)
+        matrix = EuclidianMatrix.rotation(self._angle)
         match self._mirror:
             case 'x':
-                matrice = EuclidianMatrice.x_mirror(matrice)
+                matrix = matrix.x_mirror
             case 'y':
-                matrice = EuclidianMatrice.y_mirror(matrice)
-        p = v * matrice + self
+                matrix = matrix.y_mirror
+        p = v * matrix + self
         return PinPosition(self, pin.number, pin.name, p.x, p.y)
 
     ##############################################
