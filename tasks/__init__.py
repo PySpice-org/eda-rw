@@ -10,20 +10,22 @@
 
 ####################################################################################################
 
-from invoke import task, Collection
- # import sys
+from invoke import Collection
 
 ####################################################################################################
 
-# KICADRW_SOURCE_PATH = Path(__file__).resolve().parent
+# EDARW_SOURCE_PATH = Path(__file__).resolve().parent
 
 ####################################################################################################
+
+# Fixme: better code
 
 from . import anaconda
 from . import clean
 from . import doc
 from . import git
 from . import github
+from . import stub
 from . import release
 from . import test
 
@@ -33,5 +35,6 @@ ns.add_collection(Collection.from_module(clean))
 ns.add_collection(Collection.from_module(doc))
 ns.add_collection(Collection.from_module(git))
 ns.add_collection(Collection.from_module(github))
+ns.add_collection(Collection.from_module(stub))
 ns.add_collection(Collection.from_module(release))
 ns.add_collection(Collection.from_module(test))
