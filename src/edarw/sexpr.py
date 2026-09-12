@@ -83,7 +83,7 @@ class SexprWrapper:
     ##############################################
 
     def __init_subclass__(cls) -> None:
-        cls._CLASSES.append(cls)
+        SexprWrapper._CLASSES.append(cls)
 
     ##############################################
 
