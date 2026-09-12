@@ -16,6 +16,7 @@ __all__ = [
 ####################################################################################################
 
 import math
+from collections.abc import Iterator
 from typing import Any
 
 ####################################################################################################
@@ -38,25 +39,34 @@ class EuclidianMatrice:
     ##############################################
 
     @classmethod
+    def parity(cls) -> Matrix2D:
+        return ((-1, +0),
+                (+0, -1))
+
+    ##############################################
+
+    @classmethod
     def rotation(cls, angle: int) -> Matrix2D:
         match angle:
             case 0:
                 return cls.identity()
-            case 90:
-                return ((+0, 1),
-                        (-1, 0))
-            case 180:
+            case 90 | -270:
+                return ((0, -1),
+                        (1, +0))
+            case 180 | -180:
                 # mirror x and y
                 return ((-1, 0),
                         (+0, -1))
-            case 270:
+            case 270 | -90:
                 # 90 and mirror y
                 return ((+0, 1),
                         (-1, 0))
             case _:
-                raise NotImplementedError
+                raise NotImplementedError(f"angle {angle}")
 
     ##############################################
+
+    # Fixme: implement mul
 
     @classmethod
     def x_mirror(cls, matrice: Matrix2D) -> Matrix2D:
@@ -68,13 +78,18 @@ class EuclidianMatrice:
         return ((+matrice[0][0], +matrice[0][1]),
                 (-matrice[1][0], -matrice[1][1]))
 
+    @classmethod
+    def xy_mirror(cls, matrice: Matrix2D) -> Matrix2D:
+        return ((-matrice[0][0], +matrice[0][1]),
+                (+matrice[1][0], -matrice[1][1]))
+
 ####################################################################################################
 
 class Position:
 
     ##############################################
 
-    def __init__(self, x: float, y: float) -> None:
+    def __init__(self, x: float = 0, y: float = 0) -> None:
         self._x = x
         self._y = y
 
@@ -88,14 +103,27 @@ class Position:
     def y(self) -> float:
         return self._y
 
+    @property
+    def xy(self) -> tuple[float, float]:
+        return self._x, self._y
+
+    def __len__(self) -> int:
+        return 2
+
+    def __iter__(self) -> Iterator[float]:
+        return iter(self.xy)
+
+    def __getitem__(self, index: int) -> float:
+        return self.xy[index]
+
     ##############################################
 
-    def __str__(self) -> str:
-        return f"xy=({self._x:.2f}, {self._y:.2f})"
+    def __repr__(self) -> str:
+        return f"Pxy=({self._x:.2f}, {self._y:.2f})"
 
     ##############################################
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Position):
             return False
         return (math.fabs(self._x - other.x) < EPSILON and
@@ -124,6 +152,11 @@ class Vector(Position):
 
     ##############################################
 
+    def __str__(self) -> str:
+        return f"Vxy=({self._x:.2f}, {self._y:.2f})"
+
+    ##############################################
+
     @property
     def is_vertical(self) -> bool:
         return math.fabs(self._x) < EPSILON
@@ -134,12 +167,12 @@ class Vector(Position):
 
     ##############################################
 
-    def scalar_product(self, vector) -> float:
+    def scalar_product(self, vector: Vector) -> float:
         return self._x * vector.x + self._y * vector.y
 
     ##############################################
 
-    def vectorial_product(self, vector) -> float:
+    def vectorial_product(self, vector: Vector) -> float:
         return self._x * vector.y - self._y * vector.x
 
     ##############################################
