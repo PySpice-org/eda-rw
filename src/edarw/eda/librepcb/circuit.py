@@ -14,7 +14,9 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Self, cast
 
-from edarw.sexpr import UUID, Positional, SexprWrapper
+from edarw.sexpr import UUID, Positional
+
+from .common import LibreSexpr, UuidSexpr
 
 # from rich import print
 
@@ -28,17 +30,15 @@ _module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
 
-class Variant(SexprWrapper):
+class Variant(UuidSexpr):
     CAR = 'variant'
-    uuid: Positional[UUID]
     name: str
     description: str
 
 ####################################################################################################
 
-class Netclass(SexprWrapper):
+class Netclass(UuidSexpr):
     CAR = 'netclass'
-    uuid: Positional[UUID]
     name: str
     default_trace_width: str
     default_via_drill_diameter: str
@@ -48,12 +48,11 @@ class Netclass(SexprWrapper):
 
 ####################################################################################################
 
-class Net(SexprWrapper):
+class Net(UuidSexpr):
 
     """Class to implement a net"""
 
     CAR = 'net'
-    uuid: Positional[UUID]
     auto: bool
     name: str
     netclass: UUID
@@ -78,7 +77,7 @@ class Net(SexprWrapper):
 
 ####################################################################################################
 
-class Attribute(SexprWrapper):
+class Attribute(LibreSexpr):
     CAR = 'attribute'
     name: Positional[str]
     type: str
@@ -92,9 +91,8 @@ class Attribute(SexprWrapper):
 
 ####################################################################################################
 
-class Signal(SexprWrapper):
+class Signal(UuidSexpr):
     CAR = 'signal'
-    uuid: Positional[UUID]
     net: UUID  # Fixme: can be 'none'
 
     ##############################################
@@ -135,12 +133,11 @@ class Signal(SexprWrapper):
 
 ####################################################################################################
 
-class Component(SexprWrapper):
+class Component(UuidSexpr):
 
     """Class to implement a net"""
 
     CAR = 'component'
-    uuid: Positional[UUID]
     lib_component: UUID
     lib_variant: UUID
     name: str
@@ -208,7 +205,7 @@ class Component(SexprWrapper):
 
 ####################################################################################################
 
-class Circuit(SexprWrapper):
+class Circuit(LibreSexpr):
 
     """Class to read a LibrePCB Circuit"""
 

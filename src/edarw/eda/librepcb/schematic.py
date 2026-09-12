@@ -16,7 +16,10 @@ from typing import TYPE_CHECKING, Self, cast
 
 from rich import print
 
-from edarw.sexpr import UUID, Positional, SexprWrapper
+from edarw.geometry import Position as gPosition, EuclidianMatrice
+from edarw.sexpr import UUID
+
+from .common import LibreSexpr, Position, UuidSexpr
 
 if TYPE_CHECKING:
     from .component import Component, Gate
@@ -28,9 +31,8 @@ _module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
 
-class Text(SexprWrapper):
+class Text(UuidSexpr):
     CAR = 'text'
-    uuid: Positional[UUID]
     layer: str
     height: float
     align: list[str]
@@ -41,12 +43,13 @@ class Text(SexprWrapper):
 
 ####################################################################################################
 
-class Symbol(SexprWrapper):
+class Symbol(UuidSexpr):
     CAR = 'symbol'
-    uuid: Positional[UUID]
     component: UUID  # -> Circuit.component
     lib_gate: UUID  # -> Component.gate
     position: tuple[float, float]
+    rotation: float
+    mirror: bool
     text: list[Text] = None  # ty: ignore[invalid-assignment]
 
     ##############################################
@@ -61,20 +64,23 @@ class Symbol(SexprWrapper):
 
     ##############################################
 
-    @property
-    def gate(self) -> Gate:
-        return self.project.gate(self.lib_gate)
+    # @property
+    # def gate(self) -> Gate:
+    #     return self.project.gate(self.lib_gate)
 
 ####################################################################################################
 
-class Grid(SexprWrapper):
+class Grid(LibreSexpr):
     CAR = 'grid'
     interval: float
     unit: str
 
 ####################################################################################################
 
-class FromMixin:
+class FromMixin(LibreSexpr):
+    symbol: UUID = None  # ty: ignore[invalid-assignment]
+    pin: UUID = None  # ty: ignore[invalid-assignment]
+    junction: UUID = None  # ty: ignore[invalid-assignment]
 
     @property
     def is_junction(self) -> bool:
@@ -84,41 +90,45 @@ class FromMixin:
     def is_pin(self) -> bool:
         return self.junction is None
 
+    @property
+    def position(self) -> gPosition:
+        if self.is_junction:
+            position = self.junction_obj.position_obj
+            # print('junction', position)
+        else:
+            symbol = self.symbol_obj
+            _ = self.pin_obj
+            pin = _['symbol.Pin'] if isinstance(_, dict) else _
+            position = pin.position_obj * EuclidianMatrice.rotation(symbol.rotation)
+            position += symbol.position_obj
+            # print('symbol', position, point.symbol_obj.to_json(), pin.to_json())
+        return position
 
-class From(SexprWrapper, FromMixin):
+class From(FromMixin):
     CAR = 'from'
-    symbol: UUID = None  # ty: ignore[invalid-assignment]
-    pin: UUID = None  # ty: ignore[invalid-assignment]
-    junction: UUID = None  # ty: ignore[invalid-assignment]
 
-class To(SexprWrapper, FromMixin):
+class To(FromMixin):
     CAR = 'to'
-    symbol: UUID = None  # ty: ignore[invalid-assignment]
-    pin: UUID = None  # ty: ignore[invalid-assignment]
-    junction: UUID = None  # ty: ignore[invalid-assignment]
 
 ####################################################################################################
 
-class Line(SexprWrapper):
+class Line(UuidSexpr):
     CAR = 'line'
     RENAMING = {'from_': 'from'}
-    uuid: Positional[UUID]
     width: float
     from_: From
     to: To
 
 ####################################################################################################
 
-class Junction(SexprWrapper):
+class Junction(UuidSexpr):
     CAR = 'junction'
-    uuid: Positional[UUID]
     position: tuple[float, float]
 
 ####################################################################################################
 
-class NetSegment(SexprWrapper):
+class NetSegment(UuidSexpr):
     CAR = 'netsegment'
-    uuid: Positional[UUID]
     net: UUID
     junction: list[Junction] = None  # ty: ignore[invalid-assignment]
     line: list[Line]
@@ -136,12 +146,11 @@ class NetSegment(SexprWrapper):
 
 ####################################################################################################
 
-class Schematic(SexprWrapper):
+class Schematic(UuidSexpr):
 
     """Class to read a LibrePCB Symbol"""
 
     CAR = 'librepcb_schematic'
-    uuid: Positional[UUID]
     name: str
     grid: Grid
     symbol: list[Symbol] = None  # ty: ignore[invalid-assignment]

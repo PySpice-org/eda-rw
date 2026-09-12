@@ -15,9 +15,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Self
 
-from edarw.sexpr import UUID, Positional, SexprWrapper
-
 from rich import print
+
+from .common import LibreSexpr, UuidSexpr
 
 if TYPE_CHECKING:
     from .project import Project
@@ -28,9 +28,9 @@ _module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
 
-class Pin(SexprWrapper):
+class Pin(UuidSexpr):
     CAR = 'pin'
-    uuid: Positional[UUID]
+    name: str
     position: tuple[float, float] = None  # ty: ignore[invalid-assignment]
     rotation: float = None  # ty: ignore[invalid-assignment]
     length: float = None  # ty: ignore[invalid-assignment]
@@ -41,14 +41,14 @@ class Pin(SexprWrapper):
 
 ###################################################################################################
 
-class Vertex(SexprWrapper):
+class Vertex(LibreSexpr):
     CAR = 'vertex'
     position: tuple[float, float]
     angle: float
 
 ###################################################################################################
 
-class Polygon(SexprWrapper):
+class Polygon(UuidSexpr):
     # polygon is used for arc
     #     (polygon d353fb00-6a7d-4ca1-a724-824e25005f10 (layer sym_outlines)
     #         (width 0.2) (fill false) (grab_area false)
@@ -56,7 +56,6 @@ class Polygon(SexprWrapper):
     #         (vertex (position 6.752232 1.735535) (angle 0.0))
     #     )
     CAR = 'polygon'
-    uuid: Positional[UUID]
     layer: str
     width: float
     fill: bool
@@ -65,9 +64,8 @@ class Polygon(SexprWrapper):
 
 ###################################################################################################
 
-class Circle(SexprWrapper):
+class Circle(UuidSexpr):
     CAR = 'circle'
-    uuid: Positional[UUID]
     layer: str
     width: float
     fill: bool
@@ -77,9 +75,8 @@ class Circle(SexprWrapper):
 
 ####################################################################################################
 
-class Text(SexprWrapper):
+class Text(UuidSexpr):
     CAR = 'text'
-    uuid: Positional[UUID]
     layer: str
     height: float
     align: list[str]
@@ -90,9 +87,8 @@ class Text(SexprWrapper):
 
 ####################################################################################################
 
-class Image(SexprWrapper):
+class Image(UuidSexpr):
     CAR = 'image'
-    uuid: Positional[UUID]
     file: str
     position: tuple[float, float]
     rotation: float
@@ -102,12 +98,11 @@ class Image(SexprWrapper):
 
 ####################################################################################################
 
-class Symbol(SexprWrapper):
+class Symbol(UuidSexpr):
 
     """Class to read a LibrePCB Symbol"""
 
     CAR = 'librepcb_symbol'
-    uuid: Positional[UUID]
     name: str
     description: list[str]
     keywords: str

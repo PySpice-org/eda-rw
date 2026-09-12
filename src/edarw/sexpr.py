@@ -20,7 +20,7 @@ import datetime
 import logging
 from inspect import isclass
 from pathlib import Path
-from typing import Self, _SpecialForm
+from typing import Any, Self, _SpecialForm
 
 import sexpdata as S
 from rich import print
@@ -31,6 +31,8 @@ from sexpdata import Symbol
 _module_logger = logging.getLogger(__name__)
 
 type UUID = str
+# Fixme: it is recursive...
+type JsonValue = str | int | float | list | dict
 
 ####################################################################################################
 
@@ -74,15 +76,14 @@ class SexprWrapper:
     CAR: str
     RENAMING: dict[str, str] = {}
 
-    CLASSES: list[object] = []
+    _CLASSES: list[object] = []
 
     _logger = _module_logger.getChild('SexprWrapper')
 
     ##############################################
 
     def __init_subclass__(cls) -> None:
-        cls.CLASSES.append(cls)
-        cls.IRENAMING = {b: a for a, b in cls.RENAMING.items()}
+        cls._CLASSES.append(cls)
 
     ##############################################
 
@@ -130,44 +131,73 @@ class SexprWrapper:
     ##############################################
 
     def __init__(self, sexpr: list, indent_level: int = 0, parent: object | None = None) -> None:
+        self._init_from_sexpr(sexpr, indent_level, parent)
+
+    ##############################################
+
+    @classmethod
+    def _annotations(cls) -> dict[str, Any]:
+        # merge annotations
+        annotations: dict[str, Any] = {}
+        for subclass in reversed(cls.__mro__):
+            if subclass not in (object, SexprWrapper):
+                annotations.update(annotationlib.get_annotations(subclass))
+        return annotations
+
+    @staticmethod
+    def _is_list_type(type_: type) -> bool:
+        return hasattr(type_, '__origin__') and type_.__origin__ == builtins.list
+
+    ##############################################
+
+    def _init_from_sexpr(self, sexpr: list, indent_level: int = 0, parent: object | None = None) -> None:
         # Fixme: attribute are not getter !
         self._parent = parent
         indent = ' ' * 8 * indent_level
+
         cls = self.__class__
-        annotations = annotationlib.get_annotations(cls)
+        annotations = cls._annotations()
+
         debug_print(f"{indent}CAR = {self.CAR} {annotations}")
+        # debug_print(f"{indent} MRO {cls.__mro__}")
         if not indent_level:
             debug_print(sexpr)
+
         car = car_value(sexpr)
         if car != self.CAR:
             raise ValueError(f"CAR is {car} instead of {self.CAR}")
         cdr_orig = S.cdr(sexpr)
         cdr = list(cdr_orig)
 
-        def _setattr(field, value):
+        def _setattr(field: str, value) -> None:
             debug_print(f"{indent}  .{field} = {value} <{type(value)}>")
             setattr(self, field, value)
 
-        def _append(field, obj_type, sexpr):
+        def _append(field: str, obj_type, sexpr) -> None:
             match obj_type:
                 case builtins.str:
                     value = sexpr
                 case _:  # obj_type is a class
                     value = obj_type(sexpr, indent_level=indent_level + 1, parent=self)
-            debug_print(f"{indent}  .{field} += {value} <{type(value)}>")
+            debug_print(f"{indent}  .{field} += {value} <{type(value)}>".replace('edarw.eda.librepcb.', ''))
             getattr(self, field).append(value)
 
         do_pop = True
         for field, type_ in annotations.items():
+            if field.startswith('_'):
+                continue
             # lookup if the field is renamed to fullfill Python syntac
             py_field = field
             field = self.RENAMING.get(py_field, py_field)
             if py_field != field:
                 debug_print(f"Field renamed {field} -> {py_field}")
             # pop cdr
+            # debug_print('cdr is', cdr)
             if do_pop:
                 # get cdr head
                 field_sexpr = cdr.pop(0) if cdr else None
+            else:
+                do_pop = True
             # lookup if the field has a default
             try:
                 default_value = getattr(cls, py_field)
@@ -175,7 +205,7 @@ class SexprWrapper:
             except AttributeError:
                 has_default = False
             debug_print(
-                f"{field}<{type_}> = {field_sexpr}" +
+                f"{field}<{type_}> : {field_sexpr}" +
                 " = '{default_value}'" if has_default else ' '
             )
             #
@@ -184,7 +214,7 @@ class SexprWrapper:
                     value = self._to_python(type_.type, field_sexpr, indent_level)
                     _setattr(py_field, value)
                 case _:
-                    is_list = hasattr(type_, '__origin__') and type_.__origin__ == builtins.list
+                    is_list = self._is_list_type(type_)
                     # if is_list:
                     #     debug_print('  is list')
                     if field_sexpr is None:  # cdr was poped
@@ -194,12 +224,16 @@ class SexprWrapper:
                         car = car_value(field_sexpr)
                         field_cdr = S.cdr(field_sexpr)
                     if car == field:  # car match field
-                        # debug_print(f'  field match {car}')
+                        # Fixme: indent
+                        debug_print(f'{indent}    field match {car}')
                         if is_list:
+                            # add an empty list to self
                             if not hasattr(self, py_field) or getattr(self, py_field) is None:
                                 setattr(self, py_field, [])
+                            # add first item
                             obj_type = type_.__args__[0]
                             _append(py_field, obj_type, field_sexpr)
+                            # then consume cdr until car match
                             while cdr and car_value(cdr[0]) == field:
                                 field_sexpr = cdr.pop(0)
                                 _append(py_field, obj_type, field_sexpr)
@@ -211,7 +245,7 @@ class SexprWrapper:
                             _setattr(py_field, value)
                     else:  # field is not specified
                         if has_default:
-                            # debug_print('  set default value')
+                            debug_print(f'{indent}     set default value')
                             if is_list:
                                 _setattr(py_field, [])
                             else:
@@ -230,9 +264,9 @@ class SexprWrapper:
 
     def to_json(self) -> dict:
         cls = self.__class__
-        annotations = annotationlib.get_annotations(cls)
+        annotations = cls._annotations()
 
-        def _to_json(value):
+        def _to_json(value: str | float | list | SexprWrapper) -> JsonValue:
             match value:
                 case SexprWrapper():
                     return value.to_json()
@@ -241,6 +275,7 @@ class SexprWrapper:
                 case _:
                     return value
 
-        d = {field: _to_json(getattr(self, field)) for field in annotations}
-        d['__cls__'] = self.CAR
+        d = {field: _to_json(getattr(self, field)) for field in annotations if not field.startswith('_')}
+        d['__car__'] = self.CAR
+        d['__cls__'] = self.class_name()
         return d

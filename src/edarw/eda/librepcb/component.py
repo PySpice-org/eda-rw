@@ -17,7 +17,9 @@ from typing import TYPE_CHECKING, Self
 
 from rich import print
 
-from edarw.sexpr import UUID, Positional, SexprWrapper
+from edarw.sexpr import UUID, Positional
+
+from .common import LibreSexpr, UuidSexpr
 
 if TYPE_CHECKING:
     from .project import Project
@@ -28,7 +30,7 @@ _module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
 
-class Attribute(SexprWrapper):
+class Attribute(LibreSexpr):
     CAR = 'attribute'
     name: Positional[str]
     type: str
@@ -37,9 +39,8 @@ class Attribute(SexprWrapper):
 
 ####################################################################################################
 
-class Signal(SexprWrapper):
+class Signal(UuidSexpr):
     CAR = 'signal'
-    uuid: Positional[UUID]
     name: str
     role: str
     required: bool
@@ -54,17 +55,15 @@ class Signal(SexprWrapper):
 
 ####################################################################################################
 
-class Pin(SexprWrapper):
+class Pin(UuidSexpr):
     CAR = 'pin'
-    uuid: Positional[UUID]
     signal: UUID
     text: str
 
 ###################################################################################################
 
-class Gate(SexprWrapper):
+class Gate(UuidSexpr):
     CAR = 'gate'
-    uuid: Positional[UUID]
     symbol: UUID
     position: tuple[float, float]
     rotation: float
@@ -74,9 +73,8 @@ class Gate(SexprWrapper):
 
 ####################################################################################################
 
-class Variant(SexprWrapper):
+class Variant(UuidSexpr):
     CAR = 'variant'
-    uuid: Positional[UUID]
     norm: str
     name: str
     description: str
@@ -84,12 +82,11 @@ class Variant(SexprWrapper):
 
 ####################################################################################################
 
-class Component(SexprWrapper):
+class Component(UuidSexpr):
 
     """Class to read a LibrePCB Component"""
 
     CAR = 'librepcb_component'
-    uuid: Positional[UUID]
     name: list[str]  # Fixme: local
     description: list[str]
     keywords: str
