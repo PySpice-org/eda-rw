@@ -8,15 +8,14 @@
 
 from pathlib import Path
 
+import svg
 from rich import print
 from rich.console import Console
 
-from edarw.geometry import Position as gPosition, EuclidianMatrix, Vector
 from edarw.eda.librepcb import Project
-from edarw.eda.librepcb.common import LibreSexpr
+from edarw.geometry import EuclidianMatrix, Vector
+from edarw.geometry import Position as gPosition
 from edarw.log import setup_logging
-
-import svg
 
 ####################################################################################################
 
@@ -91,7 +90,7 @@ for symbol in schematic.symbol:
         rotation = rotation.xy_mirror
 
     def symbol_transform(position: gPosition) -> gPosition:
-        return position * rotation + offset
+        return position * rotation + offset  # ruff: ignore[function-uses-loop-variable]
 
     for polygon in symbol_def.polygon:
         if polygon.layer in ('sym_hidden_grab_areas',):
@@ -147,8 +146,8 @@ canvas = svg.SVG(
     # height=60,
     elements=[
         svg.G(
-            transform=svg.Matrix(1, 0, 0, -1, 0, 100),
-            elements=elements,
+            transform=svg.Matrix(1, 0, 0, -1, 0, 100),  # ty: ignore[invalid-argument-type]
+            elements=elements,  # ty: ignore[invalid-argument-type]
         ),
     ]
 )

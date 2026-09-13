@@ -26,7 +26,7 @@ path = Path('../../librepcb-examples/calidou')
 project = Project.load(path)
 circuit = project.circuit
 
-indent = ' '*4
+indent = ' ' * 4
 
 print()
 console.rule()
