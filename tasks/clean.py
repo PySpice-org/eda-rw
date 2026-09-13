@@ -36,16 +36,10 @@ def find(matcher, path='.'):
 ####################################################################################################
 
 @task
-def flycheck(ctx):
-    with ctx.cd(ctx.Package):
-        # ctx.run('find . -name "flycheck*.py" -exec /usr/bin/rm {} \;')
-        find(lambda filename: filename.suffix == '.py' and filename.stem.startswith('flycheck'))
-
-@task
 def emacs_backup(ctx):
     # ctx.run('find . -name "*~" -type f -exec /usr/bin/rm -f {} \;')
     find(lambda filename: str(filename).endswith('~'))
 
-@task(flycheck, emacs_backup)
+@task(emacs_backup)
 def clean(ctx):
     pass

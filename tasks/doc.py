@@ -16,7 +16,6 @@ import shutil
 from invoke import task
  # import sys
 
-from .clean import flycheck as _clean_flycheck
 from .release import update_git_sha as _update_git_sha
 
 ####################################################################################################
@@ -47,7 +46,7 @@ def clean_api(ctx):
     if RST_API_PATH.exists():
         shutil.rmtree(RST_API_PATH)
 
-@task(_update_git_sha, _clean_flycheck, clean_api)
+@task(_update_git_sha, clean_api)
 def make_api(ctx):
     print('\nGenerate RST API files')
     ctx.run('pyterate-rst-api {0.Package}'.format(ctx))

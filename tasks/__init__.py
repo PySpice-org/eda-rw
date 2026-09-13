@@ -20,21 +20,21 @@ from invoke import Collection
 
 # Fixme: better code
 
-from . import anaconda
+# from . import anaconda
 from . import clean
-from . import doc
-from . import git
-from . import github
+# from . import doc
+# from . import git
+# from . import github
 from . import stub
-from . import release
-from . import test
+# from . import release
+# from . import test
 
 ns = Collection()
-ns.add_collection(Collection.from_module(anaconda))
+# ns.add_collection(Collection.from_module(anaconda))
 ns.add_collection(Collection.from_module(clean))
-ns.add_collection(Collection.from_module(doc))
-ns.add_collection(Collection.from_module(git))
-ns.add_collection(Collection.from_module(github))
+# ns.add_collection(Collection.from_module(doc))
+# ns.add_collection(Collection.from_module(git))
+# ns.add_collection(Collection.from_module(github))
 ns.add_collection(Collection.from_module(stub))
-ns.add_collection(Collection.from_module(release))
-ns.add_collection(Collection.from_module(test))
+# ns.add_collection(Collection.from_module(release))
+# ns.add_collection(Collection.from_module(test))

@@ -6,11 +6,9 @@
 #
 ####################################################################################################
 
-####################################################################################################
-
-from pathlib import Path
 import re
 import shutil
+from pathlib import Path
 
 from invoke import task
 
@@ -76,7 +74,7 @@ def update_git_sha(ctx):
         version = tag[1:]
     else:
         version = tag
-    if not re.match('\d+(\.\d+(\.\d+)?)?', version):
+    if not re.match(r'\d+(\.\d+(\.\d+)?)?', version):
         raise ValueError('Invalid version {}'.format(version))
     result = ctx.run('git rev-parse HEAD', hide='out')
     sha = result.stdout.strip()
