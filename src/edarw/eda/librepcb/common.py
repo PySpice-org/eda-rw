@@ -27,6 +27,10 @@ type PositionType = tuple[float, float]
 class LibreSexpr(SexprWrapper):
 
     # Fixme: UuidSexpr is defined after
+    # UUID requires a class dict for:
+    #    component / symbol  . Pin
+    #    component / circuit . Signal
+    #    schematic / symbol  . Text
     _UUID_MAP: dict[UUID, dict[str, LibreSexpr]] = {}
 
     ##############################################
@@ -66,9 +70,13 @@ class LibreSexpr(SexprWrapper):
     @classmethod
     def dump_uuids(cls) -> None:
         # print(LibreSexpr._UUID_MAP)
+        multi = set()
         for uuid, item in LibreSexpr._UUID_MAP.items():
             if len(item) > 1:
-                print(item)
+                multi.add(tuple(sorted(item.keys())))
+        print("Multi classess are:")
+        for _ in multi:
+            print(_)
 
     ##############################################
 
