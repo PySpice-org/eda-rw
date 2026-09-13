@@ -136,7 +136,6 @@ class Image(UuidSexpr):
 ####################################################################################################
 
 class Symbol(UuidSexpr):
-    """Class to read a LibrePCB Symbol"""
     @property
     def name(self) -> str: ...
     @property

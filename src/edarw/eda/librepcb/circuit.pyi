@@ -53,9 +53,8 @@ class Netclass(UuidSexpr):
 ####################################################################################################
 
 class Net(UuidSexpr):
-    """Class to implement a net"""
     @property
-    def netclass_obj(self: LibreSexpr) -> dict[str, LibreSexpr] | SexprWrapper | None: ...
+    def netclass_obj(self: LibreSexpr) -> Netclass: ...
     @property
     def signals(self) -> list[Signal]: ...
 
@@ -97,7 +96,6 @@ class Signal(UuidSexpr):
 ####################################################################################################
 
 class Component(UuidSexpr):
-    """Class to implement a net"""
     @property
     def circuit(self) -> Circuit: ...
     @property
@@ -128,10 +126,9 @@ class Component(UuidSexpr):
 ####################################################################################################
 
 class Circuit(LibreSexpr):
-    """Class to read a LibrePCB Circuit"""
     def get_net(self, uuid: UUID) -> Net: ...
     @property
-    def project(self): ...
+    def project(self) -> librepcb.project.Project: ...
     # ~ERROR~: name 'Project' is not defined
 
     @property

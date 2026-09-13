@@ -30,7 +30,6 @@ type UUID = str
 ####################################################################################################
 
 class Project(UuidSexpr):
-    """Class to read a LibrePCB Project"""
     @property
     def circuit(self) -> librepcb.circuit.Circuit: ...
     def component(self, uuid: UUID) -> librepcb.component.Component: ...
