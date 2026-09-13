@@ -37,7 +37,7 @@ class Text(UuidSexpr):
     height: float
     align: list[str]
     position: tuple[float, float]
-    rotation: float
+    rotation: int
     lock: bool
     value: str
 
@@ -48,7 +48,7 @@ class Symbol(UuidSexpr):
     component: UUID  # -> Circuit.component
     lib_gate: UUID  # -> Component.gate
     position: tuple[float, float]
-    rotation: float
+    rotation: int
     mirror: bool
     text: list[Text] = None  # ty: ignore[invalid-assignment]
 

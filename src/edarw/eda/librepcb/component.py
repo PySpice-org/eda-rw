@@ -66,7 +66,7 @@ class Gate(UuidSexpr):
     CAR = 'gate'
     symbol: UUID
     position: tuple[float, float]
-    rotation: float
+    rotation: int
     required: bool
     suffix: str
     pin: list[Pin] = None  # ty: ignore[invalid-assignment]

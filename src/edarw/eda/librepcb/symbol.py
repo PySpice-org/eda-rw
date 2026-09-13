@@ -32,10 +32,10 @@ class Pin(UuidSexpr):
     CAR = 'pin'
     name: str
     position: tuple[float, float] = None  # ty: ignore[invalid-assignment]
-    rotation: float = None  # ty: ignore[invalid-assignment]
+    rotation: int = None  # ty: ignore[invalid-assignment]
     length: float = None  # ty: ignore[invalid-assignment]
     name_position: tuple[float, float] = None  # ty: ignore[invalid-assignment]
-    name_rotation: float = None  # ty: ignore[invalid-assignment]
+    name_rotation: int = None  # ty: ignore[invalid-assignment]
     name_height: float = None  # ty: ignore[invalid-assignment]
     name_align: list[str] = None  # ty: ignore[invalid-assignment]
 
