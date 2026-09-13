@@ -9,8 +9,8 @@
 from pathlib import Path
 from pprint import pprint
 
-from edarw.eda.kicad.objectifier import Objectifier, SchemaNode
 from edarw.log import setup_logging
+from edarw.objectifier import Objectifier, SchemaNode
 
 ####################################################################################################
 
@@ -23,7 +23,7 @@ path = ('capacitive-half-wave-rectification-pre-zener', 'capacitive-half-wave-re
 # path = ('open-syringe-pump', 'indus', 'opensyringepump_indus.kicad_sch')
 # path = ('electrolab-cta-control-board', 'CTA_control_board.kicad_sch')
 # path = ('electrolab-cta-control-board', 'CTA_control_board.kicad_sch')
-path = ('symbols', 'Infineon_IGBT_Driver.kicad_sym')
+# path = ('symbols', 'Infineon_IGBT_Driver.kicad_sym')
 schema_path = examples_path.joinpath(*path)
 
 objectifier = Objectifier(schema_path)

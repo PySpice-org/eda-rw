@@ -6,10 +6,6 @@
 #
 ####################################################################################################
 
-# see examples/avr_da_db/rework-library-module.py
-
-####################################################################################################
-
 __all__ = [
     'Objectifier',
 ]
@@ -18,20 +14,24 @@ __all__ = [
 
 import logging
 import re
-from collections.abc import Iterator
-from typing import Any
+from collections.abc import Callable, Iterator
+from pathlib import Path
+from typing import Any, cast
 
-import sexpdata
-from sexpdata import Symbol, car, cdr
+import sexpdata as S
+from sexpdata import Symbol
 
 ####################################################################################################
 
 _module_logger = logging.getLogger(__name__)
 
+# Fixme: it is recursive
+type SexprType = list | int | float | str
+
 ####################################################################################################
 
-def car_value(_):
-    return car(_).value()
+def car_value(_: list) -> str:
+    return S.car(_).value()
 
 ####################################################################################################
 
@@ -40,7 +40,7 @@ class TreeMixin:
     ##############################################
 
     def __init__(self) -> None:
-        self._childs = []
+        self._childs: list[Any] = []
 
     ##############################################
 
@@ -60,7 +60,7 @@ class TreeMixin:
         return list(self._childs)
 
     @property
-    def first_child(self) -> Any:
+    def first_child(self) -> Any:  # ruff: ignore[any-type]
         # if self._childs:
         return self._childs[0]
         # else:
@@ -68,12 +68,17 @@ class TreeMixin:
 
     ##############################################
 
-    def append_child(self, child: Any) -> None:
+    def append_child(self, child: Any) -> None:  # ruff: ignore[any-type]
         self._childs.append(child)
 
     ##############################################
 
-    def depth_first_search(self, on_node=None, on_leaf=None, on_leave=None) -> None:
+    def depth_first_search(
+            self,
+            on_node: Callable[[TreeMixin], bool] | None = None,
+            on_leaf: Callable[[TreeMixin], None] | None = None,
+            on_leave: Callable[[TreeMixin], None] | None = None,
+    ) -> None:
         go = True
         if on_node:
             go = on_node(self)
@@ -94,7 +99,7 @@ class Node(TreeMixin):
 
     ##############################################
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: list[str]) -> None:
         super().__init__()
         self._path = path
 
@@ -105,7 +110,7 @@ class Node(TreeMixin):
         return self._path[-1]
 
     @property
-    def path(self) -> str:
+    def path(self) -> list[str]:
         return self._path
 
     @property
@@ -129,9 +134,9 @@ class Node(TreeMixin):
 
     ##############################################
 
-    def xpath(self, path: str):
-
-        DEBUG = False
+    def xpath(self, path: str) -> list[Node]:
+        # DEBUG = False
+        # DEBUG = True
 
         if path.startswith('/'):
             path = path[1:]
@@ -140,55 +145,56 @@ class Node(TreeMixin):
             # relative
             index = -1
         parts = path.split('/')
-        last_index = len(parts) -1
-        if DEBUG:
-            print(parts, last_index)
+        last_index = len(parts) - 1
+        # if DEBUG:
+        #     print(parts, last_index)
 
-        results = []
+        results: list[Node] = []
 
-        def on_node(node):
+        def on_node(node: Node) -> bool:
             nonlocal index
             if index == -1:
                 index = 0
                 return True
-            if DEBUG:
-                indent = '    '*index
-                print(indent, '@', index+1, node.path_str)
+            # if DEBUG:
+            #     indent = '    ' * index
+            #     print(indent, '@', index + 1, node.path_str)
             if node.name == parts[index]:
-                if DEBUG:
-                    print(indent, '  match')
+                # if DEBUG:
+                #     print(indent, '  match')
                 if index == last_index:
-                    if DEBUG:
-                        print(indent, '  found')
+                    # if DEBUG:
+                    #     print(indent, '  found')
                     results.append(node)
                     return False
                 index += 1
                 return True
             return False
 
-        def on_leave(node):
+        def on_leave(node: Node) -> None:
             nonlocal index
-            if DEBUG:
-                indent = '    '*index
-                print(indent, '<<<@', index+1, 'leave')
+            # if DEBUG:
+            #     indent = '    ' * index
+            #     print(indent, '<<<@', index + 1, 'leave')
             index -= 1
 
-        self.depth_first_search(on_node, on_leave=on_leave)
+        self.depth_first_search(on_node, on_leave=on_leave)  # ty: ignore[invalid-argument-type]
         return results
 
 ####################################################################################################
 
 class SchemaNode(TreeMixin):
 
-    NODES = {}
+    NODES: dict[str, SchemaNode] = {}
 
     ##############################################
 
     @classmethod
-    def get_node(cls, node: None) -> SchemaNode:
+    def get_node(cls, node: Node) -> SchemaNode:
         if not cls.NODES:
             # add root
             cls.NODES['/'] = SchemaNode('/')
+
         path_str = node.path_str
         if path_str in cls.NODES:
             return cls.NODES[path_str]
@@ -236,11 +242,38 @@ class Objectifier:
 
     ##############################################
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: Path | str) -> None:
         self._logger.info(f"Load {path}")
         with open(path) as fh:
-            sexpr = sexpdata.load(fh)
-        self._root = self._walk_sexpr(sexpr)
+            sexpr = S.load(fh)
+        self._root = cast(Node, self._walk_sexpr(sexpr))
+
+    ##############################################
+
+    def _walk_sexpr(self, sexpr: SexprType, path: list[str] | None = None) -> int | float | str | Node:
+        """Perform a depth first search"""
+        match sexpr:
+            case int() | float() | str():
+                return sexpr
+            case Symbol():
+                return sexpr  # ??? .value()
+            case list():
+                car = S.car(sexpr)
+                # Fixme: !!!
+                if isinstance(car, Symbol):
+                    car = str(car)
+                else:
+                    car.value()
+                cdr = S.cdr(sexpr)
+                path = path.copy() if path is not None else []
+                path.append(car)
+                node = Node(path)
+                for element in cdr:
+                    child = self._walk_sexpr(element, path)
+                    node.append_child(child)
+                return node
+            case _:
+                raise ValueError(f"Invalid sexpr {sexpr}")
 
     ##############################################
 
@@ -250,65 +283,48 @@ class Objectifier:
 
     ##############################################
 
-    def dump(self, root: Node = None) -> None:
-        """Sump sexp structure"""
+    def dump(self, root: Node | None = None) -> None:
+        """Dump sexp structure"""
         if root is None:
             root = self._root
-        def on_node(node):
+
+        def on_node(node: Node) -> bool:
             print(node.path_str)
             return True
-        def on_leaf(leaf):
+
+        def on_leaf(leaf: Node) -> None:
             print(f"    {leaf}")
-        root.depth_first_search(on_node, on_leaf)
+
+        root.depth_first_search(on_node, on_leaf)  # ty: ignore[invalid-argument-type]
 
     ##############################################
 
-    def get_paths(self, root: Node = None) -> None:
+    def get_paths(self, root: Node | None = None) -> None:
         """Dump sexp path"""
         if root is None:
             root = self._root
         paths = set()
-        def on_node(node):
+
+        def on_node(node: Node) -> bool:
             paths.add(node.path_str)
             return True
-        root.depth_first_search(on_node)
+
+        root.depth_first_search(on_node)  # ty: ignore[invalid-argument-type]
         for _ in sorted(paths):
             print(_)
 
     ##############################################
 
-    def get_schema(self, root: Node = None) -> None:
+    def get_schema(self, root: Node | None = None) -> None:
         if root is None:
             root = self._root
-        def on_node(node):
+
+        def on_node(node: Node) -> bool:
             schema_node = SchemaNode.get_node(node)
             schema_node.link_instance(node)
             return True
-        def on_leaf(leaf):
+
+        def on_leaf(leaf: Node) -> None:
             pass
-        root.depth_first_search(on_node, on_leaf)
 
-    ##############################################
-
-    def _walk_sexpr(self, sexpr, path=[]):
-        """Perform a depth first search"""
-        if isinstance(sexpr, (str, int, float)):
-            return sexpr
-        elif isinstance(sexpr, Symbol):
-            return sexpr   # ??? .value()
-        elif isinstance(sexpr, list):
-            _car = car(sexpr)
-            if isinstance(_car, Symbol):
-                _car = str(_car)
-            else:
-                _car.value()
-            _cdr = cdr(sexpr)
-            path = path.copy()
-            path.append(_car)
-            node = Node(path)
-            for element in _cdr:
-                child = self._walk_sexpr(element, path)
-                node.append_child(child)
-            return node
-        else:
-            raise ValueError()
+        root.depth_first_search(on_node, on_leaf)  # ty: ignore[invalid-argument-type]
