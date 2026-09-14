@@ -24,10 +24,51 @@ __all__ = [
 
 import math
 from collections.abc import Iterator
+from enum import IntEnum
 
 ####################################################################################################
 
 EPSILON = 1e-4  # numerical tolerance to match coordinate
+
+####################################################################################################
+
+class Direction(IntEnum):
+    RIGHT = 0
+    TOP = 90
+    LEFT = 180
+    BOTTOM = 270
+    # E = 0
+    # N = 90
+    # W = 180
+    # S = 270
+    NE = 45
+    NW = 135
+    SE = 225
+    SW = 315
+
+    ##############################################
+
+    @classmethod
+    def from_angle(angle: int) -> Direction:
+        match angle % 360:
+            case 0:
+                return Direction.RIGHT
+            case 90:  # -270
+                return Direction.TOP
+            case 180:  # -180
+                return Direction.LEFT
+            case 270:  # -90
+                return Direction.BOTTOM
+            case 45:
+                return Direction.NE
+            case 135:
+                return Direction.NW
+            case 225:
+                return Direction.SW
+            case 315:
+                return Direction.SE
+            case _:
+                raise ValueError(f"Invalid angle {angle}")
 
 ####################################################################################################
 
@@ -55,17 +96,17 @@ class EuclidianMatrix:
 
     @classmethod
     def rotation(cls, angle: int) -> EuclidianMatrix:
-        match angle:
+        match angle % 360:
             case 0:
                 return cls.identity()
-            case 90 | -270:
+            case 90:
                 _ = ((0, -1),
                      (1, +0))
-            case 180 | -180:
+            case 180:
                 # mirror x and y
                 _ = ((-1, 0),
                      (+0, -1))
-            case 270 | -90:
+            case 270:
                 # 90 and mirror y
                 _ = ((+0, 1),
                      (-1, 0))
