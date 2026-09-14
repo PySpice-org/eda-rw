@@ -11,6 +11,7 @@ __all__ = ['TextBuffer']
 ####################################################################################################
 
 import os
+from collections.abc import Iterable
 from typing import Self
 
 ####################################################################################################
@@ -57,10 +58,12 @@ class TextBuffer:
 
     ##############################################
 
-    def __iadd__(self, obj: tuple | list | str | object | None) -> Self:
+    def __iadd__(self, obj: str | object | Iterable | None) -> Self:
         """Append one line or a sequence of lines to the buffer using the `__str__` protocol."""
         match obj:
-            case tuple() | list():  # str is an Iterable
+            case str():
+                self._append_line(obj)
+            case Iterable():  # str is an Iterable
                 for _ in obj:
                     self._append_line(_)
             case _:
