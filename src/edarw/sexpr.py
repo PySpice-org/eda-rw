@@ -20,7 +20,7 @@ import datetime
 import logging
 from inspect import isclass
 from pathlib import Path
-from typing import Any, Self, _SpecialForm
+from typing import Any, NewType, Self, _SpecialForm
 
 import sexpdata as S
 from rich import print
@@ -30,9 +30,8 @@ from sexpdata import Symbol
 
 _module_logger = logging.getLogger(__name__)
 
-type UUID = str
-# Fixme: it is recursive...
-type JsonValue = str | int | float | list | dict
+UUID = NewType('UUID', str)
+type JsonValue = str | int | float | list['JsonValue'] | dict[str, 'JsonValue']
 
 ####################################################################################################
 
