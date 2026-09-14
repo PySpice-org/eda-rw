@@ -145,19 +145,20 @@ class TreeMixin:
             on_node: Callable[[TreeMixin], bool] | None = None,
             on_leaf: Callable[[TreeMixin], None] | None = None,
             on_leave: Callable[[TreeMixin], None] | None = None,
+            reverse: bool = False,
     ) -> None:
         go = True
-        if on_node:
+        if on_node is not None:
             go = on_node(self)
         if go:
             # print('-->')
             for child in self:
-                if isinstance(child, Node):
+                if isinstance(child, TreeMixin):
                     child.depth_first_search(on_node, on_leaf, on_leave)
-                elif on_leaf:
+                elif on_leaf is not None:
                     on_leaf(child)
             # print('<--')
-            if on_leave:
+            if on_leave is not None:
                 on_leave(self)
 
 ####################################################################################################
@@ -264,6 +265,12 @@ class Node(TreeMixin):
 
         return list(child_type(_) for _ in self)
 
+    def get_child(self, name: str) -> Node | None:
+        for child in self:
+            if isinstance(child, Node) and child.name == name:
+                return child
+        return None
+
 ####################################################################################################
 
 class SchemaNode(TreeMixin):
@@ -288,6 +295,10 @@ class SchemaNode(TreeMixin):
             parent = cls.NODES[node.parent_str]
             parent.append_child(schema_node)
             return schema_node
+
+    @classmethod
+    def root(cls) -> SchemaNode:
+        return cls.NODES['/']
 
     ##############################################
 
