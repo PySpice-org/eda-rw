@@ -14,11 +14,12 @@ __all__ = [
 
 import logging
 import re
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Self, cast
 
 import sexpdata as S
+from rich import print
 from sexpdata import Symbol
 
 ####################################################################################################
@@ -32,6 +33,72 @@ type SexprType = list | int | float | str
 
 def car_value(_: list) -> str:
     return S.car(_).value()
+
+####################################################################################################
+
+class StringList:
+    """Convenient wrapper for an hashable list of strings"""
+
+    PACK_SEPARATOR = '/'
+
+    __slots__ = ['_strings']
+
+    @classmethod
+    def pack(cls, strings: Iterable[str]) -> str:
+        return cls.PACK_SEPARATOR.join(strings)
+
+    @classmethod
+    def unpack(cls, strings: str) -> list[str]:
+        return strings.split(cls.PACK_SEPARATOR)
+
+    ##############################################
+
+    @classmethod
+    def from_args(cls, *strings: str) -> Self:
+        return cls(strings)
+
+    def __init__(self, strings: Iterable[str]) -> None:
+        self._strings = list(strings)
+
+    # def __init__(self, *strings: str | Iterable[str]) -> None:
+
+    ##############################################
+    #
+    # Hashable Protocol
+    #
+
+    def __hash__(self) -> int:
+        return hash(self.pack(self._strings))
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, StringList) and self._strings == other._strings
+
+    ##############################################
+
+    def __repr__(self) -> str:
+        return repr(self._strings)
+
+    def __len__(self) -> int:
+        return len(self._strings)
+
+    def __bool__(self) -> bool:
+        return bool(self._strings)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._strings)
+
+    def to_list(self) -> list[str]:
+        return list(self._strings)
+
+    def to_tuple(self) -> tuple[str, ...]:
+        return tuple(self._strings)
+
+    def __getitem__(self, slice: int | slice) -> str | list[str]:
+        return self._strings[slice]
+
+    def pop(self, index: int = 0) -> str:
+        # Warning: default is 0 !
+        return self._strings.pop(index)
 
 ####################################################################################################
 
@@ -181,10 +248,27 @@ class Node(TreeMixin):
         self.depth_first_search(on_node, on_leave=on_leave)  # ty: ignore[invalid-argument-type]
         return results
 
+    ##############################################
+
+    @property
+    def child_types(self) -> list:
+        return list(type(_).__name__ for _ in self)
+
+    @property
+    def child_types2(self) -> list:
+        def child_type(child: Any) -> str:  # ruff: ignore[any-type]
+            if isinstance(child, Node):
+                return child.name
+            else:
+                return type(child).__name__
+
+        return list(child_type(_) for _ in self)
+
 ####################################################################################################
 
 class SchemaNode(TreeMixin):
 
+    # key is node path
     NODES: dict[str, SchemaNode] = {}
 
     ##############################################
@@ -224,15 +308,22 @@ class SchemaNode(TreeMixin):
         number_of_instances = len(self._instances)
         childs = set()
         for node in self._instances:
-            child_str = '/'.join([type(_).__name__ for _ in node])
-            child_str = re.sub(r'Node\/(Node\/)+Node', 'Node/.../Node', child_str)
+            child_str = ', '.join(node.child_types)
+            child_str = re.sub(r'Node,( Node,)+ Node', 'Node, ..., Node', child_str)
             childs.add(child_str)
-        return f'{self._name} #{number_of_instances} {childs}'
+        _ = ' | '.join(childs)
+        return f'{self._name} #{number_of_instances} ({_})'
 
     ##############################################
 
     def link_instance(self, instance: Node) -> None:
         self._instances.append(instance)
+
+    ##############################################
+
+    @property
+    def child_types(self) -> set[StringList]:
+        return set(StringList(_.child_types2) for _ in self._instances)
 
 ####################################################################################################
 
@@ -255,15 +346,14 @@ class Objectifier:
         match sexpr:
             case int() | float() | str():
                 return sexpr
-            case Symbol():
-                return sexpr  # ??? .value()
+            # case Symbol():  # match str
+            #     return sexpr  # ??? .value()
             case list():
                 car = S.car(sexpr)
-                # Fixme: !!!
-                if isinstance(car, Symbol):
-                    car = str(car)
-                else:
-                    car.value()
+                # Fixme: ???
+                if not isinstance(car, Symbol):
+                    raise ValueError(f"car is not Symbol {sexpr}")
+                car = str(car)  # car is a Symbol
                 cdr = S.cdr(sexpr)
                 path = path.copy() if path is not None else []
                 path.append(car)
