@@ -18,6 +18,7 @@ import annotationlib
 import builtins
 import datetime
 import logging
+from collections.abc import Iterator
 from inspect import isclass
 from pathlib import Path
 from typing import Any, NewType, Self, _SpecialForm
@@ -32,6 +33,9 @@ _module_logger = logging.getLogger(__name__)
 
 UUID = NewType('UUID', str)
 type JsonValue = str | int | float | list['JsonValue'] | dict[str, 'JsonValue']
+type SexprValue = Symbol | str | int | float | tuple['SexprValue'] | list['SexprValue']
+
+SkipSexpr = sentinel('SkipSexpr')
 
 ####################################################################################################
 
@@ -75,14 +79,30 @@ class SexprWrapper:
     CAR: str
     RENAMING: dict[str, str] = {}
 
-    _CLASSES: list[object] = []
+    _CLASSES: dict[str, type] = {}
 
     _logger = _module_logger.getChild('SexprWrapper')
 
     ##############################################
 
     def __init_subclass__(cls) -> None:
-        SexprWrapper._CLASSES.append(cls)
+        if hasattr(cls, 'CAR'):
+            SexprWrapper._CLASSES[cls.CAR] = cls
+
+    ##############################################
+
+    @classmethod
+    def class_name(cls) -> str:
+        module = cls.__module__
+        i = module.rfind('.')
+        assert i >= 1
+        return cls.__module__[i + 1:] + '.' + cls.__name__
+
+    ##############################################
+
+    @classmethod
+    def cls_for_car(cls, car: str) -> type:
+        return cls._CLASSES[car]
 
     ##############################################
 
@@ -261,20 +281,57 @@ class SexprWrapper:
 
     ##############################################
 
-    def to_json(self) -> dict:
+    def iter_on_sexpr_fields(self) -> Iterator[str]:
         cls = self.__class__
         annotations = cls._annotations()
+        for field in annotations:
+            if not field.startswith('_'):
+                yield field
 
-        def _to_json(value: str | float | list | SexprWrapper) -> JsonValue:
+    ##############################################
+
+    def to_dict(self) -> dict:
+        def _to_dict(value: str | float | list | SexprWrapper) -> JsonValue:
             match value:
                 case SexprWrapper():
-                    return value.to_json()
+                    return value.to_dict()
                 case list():
-                    return [_to_json(_) for _ in value]
+                    return [_to_dict(_) for _ in value]
                 case _:
                     return value
 
-        d = {field: _to_json(getattr(self, field)) for field in annotations if not field.startswith('_')}
+        d = {field: _to_dict(getattr(self, field)) for field in self.iter_on_sexpr_fields()}
         d['__car__'] = self.CAR
         d['__cls__'] = self.class_name()
         return d
+
+    ##############################################
+
+    def _field_to_lisp(self, field: str) -> SexprValue | SkipSexpr:
+        return getattr(self, field)
+
+    ##############################################
+
+    def __to_lisp_as__(self) -> SexprValue:
+        values = []
+        for field in self.iter_on_sexpr_fields():
+            value = self._field_to_lisp(field)
+            if value is not SkipSexpr:
+                values.append(value)
+        return (
+            S.Symbol(self.CAR),
+            *values
+        )  # ty: ignore[invalid-return-type]
+
+    ##############################################
+
+    def to_sexpr(self) -> str:
+        return S.dumps(
+            self,
+            # str_as='symbol',
+            list_as=list,
+            false_as='false',
+            true_as='true',
+            none_as='none',
+            pretty_print=True,
+        )

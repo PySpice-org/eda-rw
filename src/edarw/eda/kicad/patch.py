@@ -6,7 +6,7 @@
 #
 ####################################################################################################
 
-"""Patch for sexpdata for KiCAD syntax.
+"""Patch for sexpdata for KiCad syntax.
 
 Methods that require customizing the recursion or output string of `tosexp()` should be registered
 with `@sexpdata.tosexp.register()`. Also the default handlers can be overridden by re-registration.
@@ -14,8 +14,16 @@ with `@sexpdata.tosexp.register()`. Also the default handlers can be overridden 
 
 ####################################################################################################
 
+import logging
+
 import sexpdata as _sexpdata
 from sexpdata import tosexp as _tosexp
+
+####################################################################################################
+
+_module_logger = logging.getLogger(__name__)
+
+_module_logger.info("Path sexpdata for KiCad")
 
 ####################################################################################################
 #

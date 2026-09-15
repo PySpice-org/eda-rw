@@ -11,14 +11,16 @@ __all__ = ['Project']
 ####################################################################################################
 
 import logging
+import os
+import re
 from collections.abc import ValuesView
 from datetime import datetime
 from pathlib import Path
 from typing import Self
 
-from edarw.sexpr import UUID
+from edarw.sexpr import SexprWrapper, UUID
 
-from .common import UuidSexpr
+from .common import LibreSexpr, UuidSexpr
 from .circuit import Circuit
 from .component import Component, Gate
 from .schematic import Schematic
@@ -29,6 +31,8 @@ from .symbol import Symbol
 ####################################################################################################
 
 _module_logger = logging.getLogger(__name__)
+
+LINESEP = os.linesep
 
 ####################################################################################################
 
@@ -43,6 +47,22 @@ class Project(UuidSexpr):
     created: datetime
 
     _logger = _module_logger.getChild('Project')
+
+    ##############################################
+
+    @classmethod
+    def guess_loader(self, path: Path | str) -> type[LibreSexpr]:
+        """Return the class for '(librepcb_... ...)'"""
+        content = Path(path).read_text()
+        match = re.match(r'^\(([a-z_]+)\s', content[:50])
+        if match:
+            car = match.group(1)
+            try:
+                return SexprWrapper.cls_for_car(car)
+            except KeyError:
+                raise NotImplementedError(f"Car is {car}")  # ruff: ignore[raise-without-from-inside-except]
+        else:
+            raise ValueError(f"This file '{path}' doesn't look like a .lp file:{LINESEP * 2}{content[:100]}")
 
     ##############################################
 

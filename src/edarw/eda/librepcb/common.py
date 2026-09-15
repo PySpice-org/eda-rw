@@ -14,9 +14,13 @@ __all__ = ['LibreSexpr', 'UuidSexpr']
 from collections.abc import Callable
 
 from rich import print
+from sexpdata import Symbol
 
 from edarw.geometry import Position
-from edarw.sexpr import UUID, Positional, SexprWrapper
+from edarw.sexpr import UUID, Positional, PositionalField, SexprValue, SexprWrapper, SkipSexpr
+
+# Fixme: global patch !
+from . import sexpdata_patch  # ruff: ignore[unused-import]
 
 ####################################################################################################
 
@@ -32,15 +36,6 @@ class LibreSexpr(SexprWrapper):
     #    component / circuit . Signal
     #    schematic / symbol  . Text
     _UUID_MAP: dict[UUID, dict[str, LibreSexpr]] = {}
-
-    ##############################################
-
-    @classmethod
-    def class_name(cls) -> str:
-        module = cls.__module__
-        i = module.rfind('.')
-        assert i >= 1
-        return cls.__module__[i + 1:] + '.' + cls.__name__
 
     ##############################################
 
@@ -128,3 +123,23 @@ class UuidSexpr(LibreSexpr):
 
     def __repr__(self) -> str:
         return f"{self.class_name()} {self.uuid}"
+
+    ##############################################
+
+    def _field_to_lisp(self, field: str) -> SexprValue | SkipSexpr:
+        cls = self.__class__
+        annotations = cls._annotations()
+        type_ = annotations[field]
+        value = super()._field_to_lisp(field)
+        # print(f"field [blue]{field}[/] <{type_}>")
+        match type_:
+            case PositionalField():
+                return Symbol(value)
+            case LibreSexpr():
+                return value
+            case _:
+                if SexprWrapper._is_list_type(type_) and not value:
+                    # print(f"skip {field}")
+                    return SkipSexpr
+                _ = Symbol(value) if type_ == UUID else value
+                return (Symbol(field), _)  # ty: ignore[invalid-return-type]
