@@ -2,6 +2,10 @@
 
 ####################################################################################################
 
+nogit
+
+####################################################################################################
+
 *.stderr
 *.stdout
 */tex/auto
@@ -29,17 +33,12 @@ tasks/SECRET_CONFIG.py
 
 ####################################################################################################
 
-MANIFEST
-
-####################################################################################################
-
 .cache/
 .pytest_cache/
 .tox/
 KiCadRW.egg-info/
 build/
 dist/
-
 
 # doc/logo/logo-v1.jpg
 # doc/logo/logo-v1.png
@@ -70,11 +69,23 @@ doc/sphinx/source/examples/
 
 ####################################################################################################
 
-.github/workflows/
+.python-version
+uv.lock
 .travis.yml
-README-COPY.txt
-capacitive-half-wave-rectification-pre-zener.kicad_sch
+
+.github/workflows/pyspice-test.yml
+
+README.old.md
+__TODO-2026__.md
+claude/
+
+doc/notes/idea.md
+doc/notes/kicad-ecosystem.md
+doc/notes/kicad-tools.md
+doc/notes/pcb-notes.md
+
 doc/pelican/
+
 doc/sphinx/source/-donate.rst-
 doc/sphinx/source/-how-to-refer.rst-
 doc/sphinx/source/-installation.rst-
@@ -83,33 +94,20 @@ doc/sphinx/source/development.rst
 doc/sphinx/source/index.rst
 doc/sphinx/source/on-the-web.rst
 doc/sphinx/source/overview.rst
+
+examples/kicad/avr_da_db/MCU_Microchip_AVR_Dx.kicad_sym-rewrite
+examples/kicad/avr_da_db/out
+examples/kicad/kicad-examples
+examples/librepcb/librepcb-examples
+examples/librepcb/log.txt
+examples/librepcb/schema.svg
+
 kicad-examples/capacitive-half-wave-rectification-pre-zener/capacitive-half-wave-rectification-pre-zener.orig.kicad_sch
 kicad-examples/capacitive-half-wave-rectification-pre-zener/capacitive-half-wave-rectification-pre-zener.sexpdata.kicad_sch
-kicad-links/
-log.txt
-setenv.sh
-tasks/test.py
-
-fp-info-cache
-*.bak
-
-nogit
-
-out
-
-examples/avr_da_db/MCU_Microchip_AVR_Dx.kicad_sym-rewrite
-
-# !!!
-
-.python-version
-__TODO-2026__.md
-doc/notes/idea.md
-doc/notes/kicad-ecosystem.md
-doc/notes/kicad-tools.md
-doc/notes/pcb-notes.md
-examples/kicad/avr_da_db/MCU_Microchip_AVR_Dx.kicad_sym-rewrite
-examples/kicad/kicad-examples
-grille.md
+kicad-examples/electrolab-cta-control-board/fp-info-cache
+kicad-examples/open-syringe-pump/indus/fp-info-cache
+kicad-examples/symbols/demo.bak
+kicad-examples/symbols/fp-info-cache
 kicad-examples/symbols/sym-lib-table
 kicad-examples/symbols/symbols.kicad_pcb
 kicad-examples/symbols/symbols.kicad_prl
@@ -117,7 +115,11 @@ kicad-examples/symbols/symbols.kicad_pro
 kicad-examples/symbols/symbols.kicad_sch
 kicad-examples/symbols/ublox-annna-b112/
 kicad-examples/symbols/ul/
+
 librepcb-examples/
+out/
 run-diff.sh
 src/edarw/eda/kicad/README.md
-uv.lock
+src/edarw/eda/librepcb/TODO.md
+src_edarw
+tasks/test.py
