@@ -1,0 +1,13 @@
+#! /usr/bin/env python3
+
+####################################################################################################
+#
+# EDA-RW — Python library to read/write EDA Sexpr file format
+# Copyright (C) 2026 Fabrice SALVAIRE
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+####################################################################################################
+
+from edarw.scripts.librepcb_generator import main
+
+main()
